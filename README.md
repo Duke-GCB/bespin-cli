@@ -24,8 +24,8 @@ bespin jobs init --slug qime2_step1/1/human --outfile job1.yml
 ```
 Output:
 ```
-Wrote job file job1.xml.
-Edit this file filling in TODO fields then run `bespin job create job1.xml` .
+Wrote job file job1.yml.
+Edit this file filling in TODO fields then run `bespin job create job1.yml` .
 ```
 
 
