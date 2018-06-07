@@ -68,7 +68,7 @@ Output:
 bespin jobs list
   Id  Name    State    Step      Fund Code  Created           Last Updated
 ----  ------  -------  ------  -----------  ----------------  ----------------
-   1  My Job  New                       1  2018-06-07 17:00  2018-06-07 17:00
+   1  My Job  New                       1   2018-06-07 17:00  2018-06-07 17:00
 ```
 
 ### Start running the job
