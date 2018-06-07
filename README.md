@@ -5,7 +5,7 @@ Command line client for Bespin
 ## Example usage
 
 ### Find workflow slug
-List workflows: ``
+List workflows:
 ```
 bespin workflows list
 ```
@@ -47,6 +47,7 @@ params:
     path: dds://TODO_PROJECT_NAME/TODO_FILE_PATH
 workflow_slug: qime2_step1/1/human
 ```
+User will replace all TODO fields with actual values.
 
 
 ### Create job using job file
@@ -58,6 +59,17 @@ Output:
 Created job 1
 ```
 
+### Check Status of the job
+```
+bespin jobs list
+```
+Output:
+```
+bespin jobs list
+  Id  Name    State    Step      Fund Code  Created           Last Updated
+----  ------  -------  ------  -----------  ----------------  ----------------
+   1  My Job  New                       1  2018-06-07 17:00  2018-06-07 17:00
+```
 
 ### Start running the job
 ```
