@@ -42,7 +42,7 @@ class ArgParser(object):
         list_jobs_parser.set_defaults(func=self._run_list_workflows)
 
     def _create_job_parser(self, subparsers):
-        jobs_parser = subparsers.add_parser('jobs', help='test')
+        jobs_parser = subparsers.add_parser('jobs')
         jobs_subparser = jobs_parser.add_subparsers()
 
         list_jobs_parser = jobs_subparser.add_parser('list', description='list jobs')
@@ -50,13 +50,13 @@ class ArgParser(object):
 
         init_jobs_parser = jobs_subparser.add_parser('init', description='init job file')
         init_jobs_parser.set_defaults(func=self._run_init_job)
-        init_jobs_parser.add_argument('--tag', type=str, dest='workflow_tag', required=True)
+        init_jobs_parser.add_argument('--slug', type=str, dest='slug', required=True)
         init_jobs_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
 
         submit_jobs_parser = jobs_subparser.add_parser('create',
                                                        description="create job using 'infile' from init command")
         submit_jobs_parser.set_defaults(func=self._run_create_job)
-        submit_jobs_parser.add_argument('infile', type=argparse.FileType('r'))
+        submit_jobs_parser.add_argument('infile', type=argparse.FileType('r'), help='file created by init command')
 
         start_jobs_parser = jobs_subparser.add_parser('start', description='start job')
         start_jobs_parser.set_defaults(func=self._run_start_job)
@@ -91,7 +91,7 @@ class ArgParser(object):
         self.target_object.create_job_file(args.questionnaire_id, args.outfile)
 
     def _run_init_job(self, args):
-        self.target_object.init_job(args.workflow_tag, args.outfile)
+        self.target_object.init_job(args.slug, args.outfile)
 
     def _run_create_job(self, args):
         self.target_object.create_job(args.infile)

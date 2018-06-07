@@ -32,14 +32,14 @@ class Commands(object):
         api = self._create_api()
         print(Table(column_names, api.jobs_list()))
 
-    def init_job(self, workflow_tag, outfile):
+    def init_job(self, slug, outfile):
         api = self._create_api()
-        questionnaire = api.questionnaires_list(slug=workflow_tag)[0]
+        questionnaire = api.questionnaires_list(slug=slug)[0]
         job_file = JobQuestionnaire(questionnaire).create_job_file_with_placeholders()
         outfile.write(job_file.yaml_str())
         if outfile != sys.stdout:
             print("Wrote job file {}.".format(outfile.name))
-            print("Edit this file filling in TODO fields then run `bespin job create {}` .".format(outfile.name))
+            print("Edit this file filling in TODO fields then run `bespin jobs create {}` .".format(outfile.name))
 
     def create_job(self, infile):
         api = self._create_api()
@@ -87,25 +87,29 @@ class Table(object):
 
 
 class WorkflowDetails(object):
-    TAG_COLUMN_NAME = "latest version tag"
+    SLUG_COLUMN_NAME = "latest version slug"
 
-    def __init__(self, api):
+    def __init__(self, api, only_latest_versions=True):
         self.api = api
-        self.column_names = ["id", "name", self.TAG_COLUMN_NAME]
+        self.only_latest_versions = only_latest_versions
+        self.column_names = ["id", "name", self.SLUG_COLUMN_NAME]
 
     def get_column_data(self):
         data = []
         for workflow in self.api.workflows_list():
-            latest_workflow_version = self.api.workflow_version_get(workflow['versions'][-1])
-            questionnaire = self.api.questionnaires_list(workflow_version=latest_workflow_version['id'])[0]
-            workflow[self.TAG_COLUMN_NAME] = questionnaire['slug']
-            data.append(workflow)
+            included_versions = workflow['versions']
+            if self.only_latest_versions:
+                included_versions = [included_versions[-1]]
+            for version_id in included_versions:
+                for questionnaire in self.api.questionnaires_list(workflow_version=version_id):
+                    workflow[self.SLUG_COLUMN_NAME] = questionnaire['slug']
+                    data.append(workflow)
         return data
 
 
 class JobFile(object):
-    def __init__(self, workflow_tag, name, fund_code, params):
-        self.workflow_tag = workflow_tag
+    def __init__(self, workflow_slug, name, fund_code, params):
+        self.workflow_slug = workflow_slug
         self.name = name
         self.fund_code = fund_code
         self.params = params
@@ -115,7 +119,7 @@ class JobFile(object):
             'name': self.name,
             'fund_code': self.fund_code,
             'params': self.params,
-            'workflow_tag': self.workflow_tag,
+            'workflow_slug': self.workflow_slug,
         }
         return yaml.dump(data, default_flow_style=False)
 
@@ -145,7 +149,7 @@ class JobFile(object):
 
     def create_job(self, api):
         dds_user_credential = api.dds_user_credentials_list()[0]
-        questionnaire = api.questionnaires_list(slug=self.workflow_tag)[0]
+        questionnaire = api.questionnaires_list(slug=self.workflow_slug)[0]
         stage_group = api.stage_group_post()
         sequence = 0
         for dds_file, path in self.get_dds_files_details():
@@ -165,8 +169,9 @@ class JobFileLoader(object):
 
     def create_job_file(self):
         self.validate_job_file_data()
-        job_file = JobFile(workflow_tag=self.data['workflow_tag'],
-                           name=self.data['name'], fund_code=self.data['fund_code'],
+        job_file = JobFile(workflow_slug=self.data['workflow_slug'],
+                           name=self.data['name'],
+                           fund_code=self.data['fund_code'],
                            params=self.data['params'])
         return job_file
 
@@ -198,7 +203,7 @@ class JobQuestionnaire(object):
         self.questionnaire = questionnaire
 
     def create_job_file_with_placeholders(self):
-        return JobFile(workflow_tag=self.questionnaire['slug'],
+        return JobFile(workflow_slug=self.questionnaire['slug'],
                        name=USER_VALUE_PLACEHOLDER, fund_code=USER_VALUE_PLACEHOLDER,
                        params=self.format_user_fields())
 
