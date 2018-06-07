@@ -72,6 +72,7 @@ bespin jobs list
 ```
 
 ### Start running the job
+Start running a job using the token "run-job-token1"
 ```
-bespin jobs start job1.yml
+bespin jobs start 1 --token run-job-token1
 ```
