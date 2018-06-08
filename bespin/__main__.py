@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 import pkg_resources
 from bespin.argparse import ArgParser

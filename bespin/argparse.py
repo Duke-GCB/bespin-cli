@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import sys
 
@@ -50,7 +51,7 @@ class ArgParser(object):
 
         init_jobs_parser = jobs_subparser.add_parser('init', description='init job file')
         init_jobs_parser.set_defaults(func=self._run_init_job)
-        init_jobs_parser.add_argument('--slug', type=str, dest='slug', required=True)
+        init_jobs_parser.add_argument('--tag', type=str, dest='tag', required=True)
         init_jobs_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
 
         submit_jobs_parser = jobs_subparser.add_parser('create',
@@ -91,7 +92,7 @@ class ArgParser(object):
         self.target_object.create_job_file(args.questionnaire_id, args.outfile)
 
     def _run_init_job(self, args):
-        self.target_object.init_job(args.slug, args.outfile)
+        self.target_object.init_job(args.tag, args.outfile)
 
     def _run_create_job(self, args):
         self.target_object.create_job(args.infile)

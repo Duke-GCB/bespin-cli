@@ -1,3 +1,4 @@
+from __future__ import print_function
 from bespin.config import ConfigFile
 from bespin.api import BespinApi
 from bespin.exceptions import IncompleteJobFileException
@@ -50,9 +51,9 @@ class Commands(object):
         api = self._create_api()
         print(Table(column_names, api.jobs_list()))
 
-    def init_job(self, slug, outfile):
+    def init_job(self, tag, outfile):
         api = self._create_api()
-        questionnaire = api.questionnaires_list(slug=slug)[0]
+        questionnaire = api.questionnaires_list(slug=tag)[0]
         job_file = JobQuestionnaire(questionnaire).create_job_file_with_placeholders()
         outfile.write(job_file.yaml_str())
         if outfile != sys.stdout:
@@ -105,12 +106,12 @@ class Table(object):
 
 
 class WorkflowDetails(object):
-    SLUG_COLUMN_NAME = "latest version slug"
+    TAG_COLUMN_NAME = "latest version tag"
 
     def __init__(self, api, only_latest_versions=True):
         self.api = api
         self.only_latest_versions = only_latest_versions
-        self.column_names = ["id", "name", self.SLUG_COLUMN_NAME]
+        self.column_names = ["id", "name", self.TAG_COLUMN_NAME]
 
     def get_column_data(self):
         data = []
@@ -120,31 +121,31 @@ class WorkflowDetails(object):
                 included_versions = [included_versions[-1]]
             for version_id in included_versions:
                 for questionnaire in self.api.questionnaires_list(workflow_version=version_id):
-                    workflow[self.SLUG_COLUMN_NAME] = questionnaire['slug']
+                    workflow[self.TAG_COLUMN_NAME] = questionnaire['slug']
                     data.append(workflow)
         return data
 
 
 class JobFile(object):
-    def __init__(self, workflow_slug, name, fund_code, params):
-        self.workflow_slug = workflow_slug
+    def __init__(self, workflow_tag, name, fund_code, job_order):
+        self.workflow_tag = workflow_tag
         self.name = name
         self.fund_code = fund_code
-        self.params = params
+        self.job_order = job_order
 
     def yaml_str(self):
         data = {
             'name': self.name,
             'fund_code': self.fund_code,
-            'params': self.params,
-            'workflow_slug': self.workflow_slug,
+            'job_order': self.job_order,
+            'workflow_tag': self.workflow_tag,
         }
         return yaml.dump(data, default_flow_style=False)
 
     def create_user_job_order_json(self):
         user_job_order = {}
-        for key in self.params.keys():
-            value = self.params[key]
+        for key in self.job_order.keys():
+            value = self.job_order[key]
             if isinstance(value, dict) and value['class'] == 'File':
                 value['path'] = self.format_file_path(value['path'])
             user_job_order[key] = value
@@ -157,8 +158,8 @@ class JobFile(object):
     def get_dds_files_details(self):
         dds_file_util = DDSFileUtil()
         dds_files = []
-        for key in self.params.keys():
-            value = self.params[key]
+        for key in self.job_order.keys():
+            value = self.job_order[key]
             if isinstance(value, dict) and value['class'] == 'File':
                 path = value['path']
                 dds_file = dds_file_util.find_file_for_path(path)
@@ -167,7 +168,7 @@ class JobFile(object):
 
     def create_job(self, api):
         dds_user_credential = api.dds_user_credentials_list()[0]
-        questionnaire = api.questionnaires_list(slug=self.workflow_slug)[0]
+        questionnaire = api.questionnaires_list(slug=self.workflow_tag)[0]
         stage_group = api.stage_group_post()
         dds_project_ids = set()
         sequence = 0
@@ -193,10 +194,10 @@ class JobFileLoader(object):
 
     def create_job_file(self):
         self.validate_job_file_data()
-        job_file = JobFile(workflow_slug=self.data['workflow_slug'],
+        job_file = JobFile(workflow_tag=self.data['workflow_tag'],
                            name=self.data['name'],
                            fund_code=self.data['fund_code'],
-                           params=self.data['params'])
+                           job_order=self.data['job_order'])
         return job_file
 
     def validate_job_file_data(self):
@@ -204,10 +205,10 @@ class JobFileLoader(object):
         for field_name in ['name', 'fund_code']:
             if self.value_contains_placeholder(self.data[field_name]):
                 bad_fields.append(field_name)
-        params = self.data['params']
-        for param_field_name in params.keys():
-            if self.value_contains_placeholder(params[param_field_name]):
-                bad_fields.append("param.{}".format(param_field_name))
+        job_order = self.data['job_order']
+        for jo_field_name in job_order.keys():
+            if self.value_contains_placeholder(job_order[jo_field_name]):
+                bad_fields.append("param.{}".format(jo_field_name))
         if bad_fields:
             raise IncompleteJobFileException("Please fill in TODO field(s): {}".format(', '.join(bad_fields)))
 
@@ -227,9 +228,9 @@ class JobQuestionnaire(object):
         self.questionnaire = questionnaire
 
     def create_job_file_with_placeholders(self):
-        return JobFile(workflow_slug=self.questionnaire['slug'],
+        return JobFile(workflow_tag=self.questionnaire['slug'],
                        name=USER_VALUE_PLACEHOLDER, fund_code=USER_VALUE_PLACEHOLDER,
-                       params=self.format_user_fields())
+                       job_order=self.format_user_fields())
 
     def format_user_fields(self):
         user_fields = json.loads(self.questionnaire['user_fields_json'])
