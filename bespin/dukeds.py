@@ -30,3 +30,7 @@ class DDSFileUtil(object):
             if project.name == project_name:
                 return project
         return None
+
+    def give_download_permissions(self, project_id, dds_user_id):
+        self.client.dds_connection.data_service.set_user_project_permission(project_id, dds_user_id,
+                                                                            auth_role='file_downloader')

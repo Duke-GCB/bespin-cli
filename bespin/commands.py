@@ -11,6 +11,24 @@ import sys
 USER_VALUE_PLACEHOLDER = "TODO"
 USER_FILE_PLACEHOLDER = "dds://TODO_PROJECT_NAME/TODO_FILE_PATH"
 USER_PLACEHOLDERS = [USER_VALUE_PLACEHOLDER, USER_FILE_PLACEHOLDER]
+USER_PLACEHOLDER_DICT = {
+    'File': {
+        "class": "File",
+        "path": USER_FILE_PLACEHOLDER
+    },
+    'int': USER_VALUE_PLACEHOLDER,
+    'string': USER_VALUE_PLACEHOLDER,
+    'NamedFASTQFilePairType': {
+        "name": USER_VALUE_PLACEHOLDER,
+        "file1": {
+           "class":"File",
+            "path": USER_FILE_PLACEHOLDER},
+        "file2": {
+            "class":"File",
+            "path": USER_FILE_PLACEHOLDER
+        }
+    }
+}
 
 
 class Commands(object):
@@ -151,15 +169,21 @@ class JobFile(object):
         dds_user_credential = api.dds_user_credentials_list()[0]
         questionnaire = api.questionnaires_list(slug=self.workflow_slug)[0]
         stage_group = api.stage_group_post()
+        dds_project_ids = set()
         sequence = 0
         for dds_file, path in self.get_dds_files_details():
             api.dds_job_input_files_post(dds_file.project_id, dds_file.id, path, 0, sequence,
                                          dds_user_credential['id'], stage_group_id=stage_group['id'])
             sequence += 1
+            dds_project_ids.add(dds_file.project_id)
         user_job_order_json = self.create_user_job_order_json()
         job_answer_set = api.job_answer_set_post(self.name, self.fund_code, user_job_order_json,
                                                  questionnaire['id'], stage_group['id'])
         job = api.job_answer_set_create_job(job_answer_set['id'])
+
+        dds_file_util = DDSFileUtil()
+        for project_id in dds_project_ids:
+            dds_file_util.give_download_permissions(project_id, dds_user_credential['dds_id'])
         return job
 
 
@@ -213,14 +237,21 @@ class JobQuestionnaire(object):
         for user_field in user_fields:
             field_type = user_field.get('type')
             field_name = user_field.get('name')
-            if field_type == 'File':
-                formatted_user_fields[field_name] = {
-                    "class": "File",
-                    "path": USER_FILE_PLACEHOLDER
-                }
-            elif field_type == 'int' or field_type == 'string':
-                formatted_user_fields[field_name] = USER_VALUE_PLACEHOLDER
+            if isinstance(field_type, dict):
+                if field_type['type'] == 'array':
+                    value = self.create_placeholder_value(field_type['items'], is_array=True)
+                else:
+                    value = self.create_placeholder_value(field_type['type'], is_array=False)
             else:
-                raise ValueError("Not supported type {}".format(field_type))
-
+                value = self.create_placeholder_value(field_type, is_array=False)
+            formatted_user_fields[field_name] = value
         return formatted_user_fields
+
+    def create_placeholder_value(self, type_name, is_array):
+        if is_array:
+            return [self.create_placeholder_value(type_name, is_array=False)]
+        else: # single item type
+            placeholder = USER_PLACEHOLDER_DICT.get(type_name)
+            if not placeholder:
+                return USER_VALUE_PLACEHOLDER
+            return placeholder
