@@ -155,9 +155,8 @@ class WorkflowDetails(object):
     """
     TAG_COLUMN_NAME = "latest version tag"
 
-    def __init__(self, api, only_latest_versions=True):
+    def __init__(self, api):
         self.api = api
-        self.only_latest_versions = only_latest_versions
         self.column_names = ["id", "name", self.TAG_COLUMN_NAME]
 
     def get_column_data(self):
@@ -167,13 +166,10 @@ class WorkflowDetails(object):
         """
         data = []
         for workflow in self.api.workflows_list():
-            included_versions = workflow['versions']
-            if self.only_latest_versions:
-                included_versions = [included_versions[-1]]
-            for version_id in included_versions:
-                for questionnaire in self.api.questionnaires_list(workflow_version=version_id):
-                    workflow[self.TAG_COLUMN_NAME] = questionnaire['slug']
-                    data.append(workflow)
+            latest_version = workflow['versions'][-1]
+            for questionnaire in self.api.questionnaires_list(workflow_version=latest_version):
+                workflow[self.TAG_COLUMN_NAME] = questionnaire['slug']
+                data.append(workflow)
         return data
 
 
@@ -289,7 +285,7 @@ class JobFileLoader(object):
         job_order = self.data['job_order']
         for jo_field_name in job_order.keys():
             if self.value_contains_placeholder(job_order[jo_field_name]):
-                bad_fields.append("param.{}".format(jo_field_name))
+                bad_fields.append("job_order.{}".format(jo_field_name))
         if bad_fields:
             raise IncompleteJobFileException("Please fill in TODO field(s): {}".format(', '.join(bad_fields)))
 
