@@ -5,6 +5,9 @@ CONTENT_TYPE = 'application/json'
 
 
 class BespinApi(object):
+    """
+    Communicates with Bespin API via REST
+    """
     def __init__(self, config, user_agent_str):
         self.config = config
         self.user_agent_str = user_agent_str
