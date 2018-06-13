@@ -85,6 +85,8 @@ class BespinApi(object):
             if workflow_version:
                 url += "workflow_version={}".format(workflow_version)
             if slug:
+                if workflow_version:
+                    url += "&"
                 url += "slug={}".format(slug)
         return self._get_request(url)
 
