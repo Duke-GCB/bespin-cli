@@ -82,15 +82,6 @@ class ArgParser(object):
     def _run_list_workflows(self, _):
         self.target_object.workflows_list()
 
-    def _run_list_workflow_versions(self, _):
-        self.target_object.list_workflow_versions()
-
-    def _run_list_questionnaires(self, _):
-        self.target_object.list_questionnaires()
-
-    def _run_create_job_file(self, args):
-        self.target_object.create_job_file(args.questionnaire_id, args.outfile)
-
     def _run_init_job(self, args):
         self.target_object.init_job(args.tag, args.outfile)
 
