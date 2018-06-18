@@ -6,7 +6,7 @@ from six.moves import input
 
 CONFIG_FILENAME_ENV = 'BESPIN_CONFIG'
 DEFAULT_CONFIG_FILENAME = '~/.bespin.yml'
-BASE_BESPIN_URL = 'https://bespin.genome.duke.edu/api'
+BASE_BESPIN_URL = 'https://bespin.genome.duke.edu'
 DEFAULT_BESPIN_URL = '{}/api/'.format(BASE_BESPIN_URL)
 
 ENTER_BESPIN_TOKEN_PROMPT = """Please request a token from {}
