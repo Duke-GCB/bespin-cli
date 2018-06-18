@@ -78,12 +78,12 @@ class BespinApiTestCase(TestCase):
         mock_requests.get.assert_called_with('someurl/job-questionnaires/?workflow_version=1',
                                              headers=self.expected_headers)
 
-        api.questionnaires_list(slug='exomeseq/v1/human')
-        mock_requests.get.assert_called_with('someurl/job-questionnaires/?slug=exomeseq/v1/human',
+        api.questionnaires_list(tag='exomeseq/v1/human')
+        mock_requests.get.assert_called_with('someurl/job-questionnaires/?tag=exomeseq/v1/human',
                                              headers=self.expected_headers)
 
-        api.questionnaires_list(workflow_version=1, slug='exomeseq/v1/human')
-        mock_requests.get.assert_called_with('someurl/job-questionnaires/?workflow_version=1&slug=exomeseq/v1/human',
+        api.questionnaires_list(workflow_version=1, tag='exomeseq/v1/human')
+        mock_requests.get.assert_called_with('someurl/job-questionnaires/?workflow_version=1&tag=exomeseq/v1/human',
                                              headers=self.expected_headers)
 
     @patch('bespin.api.requests')

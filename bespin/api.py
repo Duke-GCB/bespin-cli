@@ -78,16 +78,16 @@ class BespinApi(object):
     def workflow_version_get(self, workflow_version):
         return self._get_request('/workflow-versions/{}/'.format(workflow_version))
 
-    def questionnaires_list(self, workflow_version=None, slug=None):
+    def questionnaires_list(self, workflow_version=None, tag=None):
         url = '/job-questionnaires/'
-        if workflow_version or slug:
+        if workflow_version or tag:
             url += "?"
             if workflow_version:
                 url += "workflow_version={}".format(workflow_version)
-            if slug:
+            if tag:
                 if workflow_version:
                     url += "&"
-                url += "slug={}".format(slug)
+                url += "tag={}".format(tag)
         return self._get_request(url)
 
     def questionnaire_get(self, questionnaire_id):

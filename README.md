@@ -4,14 +4,14 @@ Command line client for Bespin
 
 ## Example usage
 
-### Find workflow slug
+### Find workflow tag
 List workflows:
 ```
 bespin workflows list
 ```
 Output:
 ```
-  Id  Name                          Latest Version Slug
+  Id  Name                          Latest Version Tag
 ----  ----------------------------  -------------------------
    1  QIIME2 Step 1                 qime2_step1/1/human
    2  QIIME2 Step 2 (DADA2 option)  qime2_step2_dada2/1/human
@@ -20,7 +20,7 @@ Output:
 
 ### Init job file
 ```
-bespin jobs init --slug qime2_step1/1/human --outfile job1.yml
+bespin jobs init --tag qime2_step1/1/human --outfile job1.yml
 ```
 Output:
 ```
@@ -45,7 +45,7 @@ params:
   sequences:
     class: File
     path: dds://TODO_PROJECT_NAME/TODO_FILE_PATH
-workflow_slug: qime2_step1/1/human
+workflow_tag: qime2_step1/1/human
 ```
 User will replace all TODO fields with actual values.
 

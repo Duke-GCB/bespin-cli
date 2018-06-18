@@ -47,7 +47,7 @@ class CommandsTestCase(TestCase):
         commands = Commands(self.version_str, self.user_agent_str)
         commands.init_job(tag='rnaseq/v1/human', outfile=mock_outfile)
 
-        mock_bespin_api.return_value.questionnaires_list.assert_called_with(slug='rnaseq/v1/human')
+        mock_bespin_api.return_value.questionnaires_list.assert_called_with(tag='rnaseq/v1/human')
         mock_job_file = mock_job_questionnaire.return_value.create_job_file_with_placeholders.return_value
         mock_outfile.write.assert_called_with(mock_job_file.yaml_str.return_value)
 
@@ -150,7 +150,7 @@ class WorkflowDetailsTestCase(TestCase):
             {'id': 1, 'name': 'exome', 'versions': [1, 2]}
         ]
         mock_api.questionnaires_list.return_value = [
-            {'slug': 'exome/v2/human'}
+            {'tag': 'exome/v2/human'}
         ]
         details = WorkflowDetails(mock_api)
         expected_data = [{'id': 1,
@@ -238,7 +238,7 @@ class JobFileTestCase(TestCase):
 
         job_file.create_job(mock_api)
 
-        mock_api.questionnaires_list.assert_called_with(slug='sometag')
+        mock_api.questionnaires_list.assert_called_with(tag='sometag')
         mock_api.dds_job_input_files_post.assert_called_with(666, 777, 'somepath', 0, 0, 111, stage_group_id=333)
         json_payload = '{"myfile": {"class": "File", "path": "dds_project_somepath.txt"}, "myint": 555}'
         mock_api.job_answer_set_post.assert_called_with('myjob', '001', json_payload, 222, 333)
@@ -335,7 +335,7 @@ class JobFileLoaderTestCase(TestCase):
 class JobQuestionnaireTestCase(TestCase):
     def test_create_job_file_with_placeholders(self):
         questionnaire = JobQuestionnaire({
-            'slug': 'mytag',
+            'tag': 'mytag',
             'user_fields_json': '{}'
         })
         job_file = questionnaire.create_job_file_with_placeholders()
@@ -353,7 +353,7 @@ class JobQuestionnaireTestCase(TestCase):
             ]
         """
         questionnaire = JobQuestionnaire({
-            'slug': 'mytag',
+            'tag': 'mytag',
             'user_fields_json': user_fields_str
         })
         user_fields = questionnaire.format_user_fields()
@@ -363,7 +363,7 @@ class JobQuestionnaireTestCase(TestCase):
 
     def test_create_placeholder_value(self):
         questionnaire = JobQuestionnaire({
-            'slug': 'mytag',
+            'tag': 'mytag',
             'user_fields_json': '{}'
         })
         self.assertEqual(

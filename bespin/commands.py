@@ -68,11 +68,11 @@ class Commands(object):
     def init_job(self, tag, outfile):
         """
         Write a sample job file with placeholder values to outfile
-        :param tag: str: tag (slug) representing which workflow/questionnaire to use
+        :param tag: str: tag representing which workflow/questionnaire to use
         :param outfile: file: output file that will have the sample job data written to
         """
         api = self._create_api()
-        questionnaire = api.questionnaires_list(slug=tag)[0]
+        questionnaire = api.questionnaires_list(tag=tag)[0]
         job_file = JobQuestionnaire(questionnaire).create_job_file_with_placeholders()
         outfile.write(job_file.yaml_str())
         if outfile != sys.stdout:
@@ -168,7 +168,7 @@ class WorkflowDetails(object):
         for workflow in self.api.workflows_list():
             latest_version = workflow['versions'][-1]
             for questionnaire in self.api.questionnaires_list(workflow_version=latest_version):
-                workflow[self.TAG_COLUMN_NAME] = questionnaire['slug']
+                workflow[self.TAG_COLUMN_NAME] = questionnaire['tag']
                 data.append(workflow)
         return data
 
@@ -242,7 +242,7 @@ class JobFile(object):
         :return: dict: job dictionary returned from bespin api
         """
         dds_user_credential = api.dds_user_credentials_list()[0]
-        questionnaire = api.questionnaires_list(slug=self.workflow_tag)[0]
+        questionnaire = api.questionnaires_list(tag=self.workflow_tag)[0]
         stage_group = api.stage_group_post()
         dds_project_ids = set()
         sequence = 0
@@ -311,7 +311,7 @@ class JobQuestionnaire(object):
         self.questionnaire = questionnaire
 
     def create_job_file_with_placeholders(self):
-        return JobFile(workflow_tag=self.questionnaire['slug'],
+        return JobFile(workflow_tag=self.questionnaire['tag'],
                        name=USER_VALUE_PLACEHOLDER, fund_code=USER_VALUE_PLACEHOLDER,
                        job_order=self.format_user_fields())
 
