@@ -88,7 +88,9 @@ class Commands(object):
         api = self._create_api()
         job_file = JobFileLoader(infile).create_job_file()
         job = job_file.create_job(api)
-        print("Created job {}".format(job['id']))
+        job_id = job['id']
+        print("Created job {}".format(job_id))
+        print("To start this job run `bespin jobs start {} --token _RUN_JOB_TOKEN_ >` .".format(job_id))
 
     def start_job(self, job_id, token=None):
         """

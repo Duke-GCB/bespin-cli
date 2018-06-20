@@ -63,7 +63,9 @@ class CommandsTestCase(TestCase):
         commands.create_job(infile=mock_infile)
 
         mock_job_file_loader.assert_called_with(mock_infile)
-        mock_print.assert_called_with("Created job 1")
+        mock_print.assert_has_calls([
+            call("Created job 1"),
+            call("To start this job run `bespin jobs start 1 --token _RUN_JOB_TOKEN_ >` .")])
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
