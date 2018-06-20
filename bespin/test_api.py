@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from unittest import TestCase
-from bespin.api import BespinApi, BespinException, NotFoundException
+from bespin.api import BespinApi, BespinException, NotFoundException, requests
 from mock import patch, Mock
 
 
@@ -13,6 +13,33 @@ class BespinApiTestCase(TestCase):
             'Authorization': 'Token sometoken',
             'content-type': 'application/json'
         }
+
+    @patch('bespin.api.requests')
+    def test_get_connection_error(self, mock_requests):
+        mock_requests.exceptions.ConnectionError = ValueError
+        mock_requests.get.side_effect = ValueError("Some Error")
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        with self.assertRaises(BespinException) as raised_exception:
+            api._get_request('test')
+        self.assertEqual(str(raised_exception.exception).strip(), 'Failed to connect to someurl\nSome Error')
+
+    @patch('bespin.api.requests')
+    def test_post_connection_error(self, mock_requests):
+        mock_requests.exceptions.ConnectionError = ValueError
+        mock_requests.post.side_effect = ValueError("Some Error")
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        with self.assertRaises(BespinException) as raised_exception:
+            api._post_request('test', data={})
+        self.assertEqual(str(raised_exception.exception).strip(), 'Failed to connect to someurl\nSome Error')
+
+    @patch('bespin.api.requests')
+    def test_delete_connection_error(self, mock_requests):
+        mock_requests.exceptions.ConnectionError = ValueError
+        mock_requests.delete.side_effect = ValueError("Some Error")
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        with self.assertRaises(BespinException) as raised_exception:
+            api._delete_request('test')
+        self.assertEqual(str(raised_exception.exception).strip(), 'Failed to connect to someurl\nSome Error')
 
     @patch('bespin.api.requests')
     def test_jobs_list(self, mock_requests):

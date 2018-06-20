@@ -35,14 +35,20 @@ class BespinApi(object):
     def _post_request(self, url_suffix, data):
         url = self._build_url(url_suffix)
         headers = self._build_headers()
-        response = requests.post(url, headers=headers, json=data)
+        try:
+            response = requests.post(url, headers=headers, json=data)
+        except requests.exceptions.ConnectionError as ex:
+            raise BespinException("Failed to connect to {}\n{}".format(self.config.url, ex))
         self._check_response(response)
         return response.json()
 
     def _delete_request(self, url_suffix):
         url = self._build_url(url_suffix)
         headers = self._build_headers()
-        response = requests.delete(url, headers=headers)
+        try:
+            response = requests.delete(url, headers=headers)
+        except requests.exceptions.ConnectionError as ex:
+            raise BespinException("Failed to connect to {}\n{}".format(self.config.url, ex))
         self._check_response(response)
         return response
 
