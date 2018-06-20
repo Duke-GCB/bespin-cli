@@ -8,18 +8,19 @@ import yaml
 import json
 import sys
 
-USER_VALUE_PLACEHOLDER = "TODO"
-USER_FILE_PLACEHOLDER = "dds://TODO_PROJECT_NAME/TODO_FILE_PATH"
-USER_PLACEHOLDERS = [USER_VALUE_PLACEHOLDER, USER_FILE_PLACEHOLDER]
+STRING_VALUE_PLACEHOLDER = "<String Value>"
+INT_VALUE_PLACEHOLDER = "<Integer Value>"
+USER_FILE_PLACEHOLDER = "dds://<Project Name>/<File Path>"
+USER_PLACEHOLDER_VALUES = [STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, USER_FILE_PLACEHOLDER]
 USER_PLACEHOLDER_DICT = {
     'File': {
         "class": "File",
         "path": USER_FILE_PLACEHOLDER
     },
-    'int': USER_VALUE_PLACEHOLDER,
-    'string': USER_VALUE_PLACEHOLDER,
+    'int': INT_VALUE_PLACEHOLDER,
+    'string': STRING_VALUE_PLACEHOLDER,
     'NamedFASTQFilePairType': {
-        "name": USER_VALUE_PLACEHOLDER,
+        "name": STRING_VALUE_PLACEHOLDER,
         "file1": {
             "class": "File",
             "path": USER_FILE_PLACEHOLDER
@@ -30,6 +31,10 @@ USER_PLACEHOLDER_DICT = {
         }
     }
 }
+
+
+def is_list_but_not_string(obj):
+    return isinstance(obj, list) and not isinstance(obj, str)
 
 
 class Commands(object):
@@ -209,7 +214,6 @@ class JobFile(object):
         for key in self.job_order.keys():
             value = self.job_order[key]
             user_job_order[key] = self.recursive_format_file_path(value)
-        print(user_job_order)
         return json.dumps(user_job_order)
 
     def recursive_format_file_path(self, obj):
@@ -218,7 +222,7 @@ class JobFile(object):
         :param obj: object: dict or list or simple value, can be recursive data structure.
         :return: obj: formatted replacing file urls
         """
-        if isinstance(obj, list) and not isinstance(obj, str):
+        if is_list_but_not_string(obj):
             return [self.recursive_format_file_path(item) for item in obj]
         elif isinstance(obj, dict):
             if 'class' in obj and obj['class'] == 'File':
@@ -307,17 +311,28 @@ class JobFileLoader(object):
             if self.value_contains_placeholder(job_order[jo_field_name]):
                 bad_fields.append("job_order.{}".format(jo_field_name))
         if bad_fields:
-            raise IncompleteJobFileException("Please fill in TODO field(s): {}".format(', '.join(bad_fields)))
+            raise IncompleteJobFileException("Please fill in placeholder values for field(s): {}".format(', '.join(bad_fields)))
 
     @staticmethod
     def value_contains_placeholder(obj):
         if isinstance(obj, dict):
-            if obj['class'] == 'File':
-                return obj['path'] in USER_PLACEHOLDERS
+            obj_class = obj.get('class')
+            if obj_class == 'File':
+                return obj['path'] in USER_PLACEHOLDER_VALUES
             else:
-                raise ValueError("Unknown class {}".format(obj['class']))
+                if obj_class:
+                    raise ValueError("Unknown class {}".format(obj_class))
+                for value in obj.values():
+                    if JobFileLoader.value_contains_placeholder(value):
+                        return True
+                return False
+        elif is_list_but_not_string(obj):
+            for value in obj:
+                if JobFileLoader.value_contains_placeholder(value):
+                    return True
+            return False
         else:
-            return obj in USER_PLACEHOLDERS
+            return obj in USER_PLACEHOLDER_VALUES
 
 
 class JobQuestionnaire(object):
@@ -332,7 +347,7 @@ class JobQuestionnaire(object):
 
     def create_job_file_with_placeholders(self):
         return JobFile(workflow_tag=self.questionnaire['tag'],
-                       name=USER_VALUE_PLACEHOLDER, fund_code=USER_VALUE_PLACEHOLDER,
+                       name=STRING_VALUE_PLACEHOLDER, fund_code=STRING_VALUE_PLACEHOLDER,
                        job_order=self.format_user_fields())
 
     def format_user_fields(self):
@@ -357,5 +372,5 @@ class JobQuestionnaire(object):
         else:  # single item type
             placeholder = USER_PLACEHOLDER_DICT.get(type_name)
             if not placeholder:
-                return USER_VALUE_PLACEHOLDER
+                return STRING_VALUE_PLACEHOLDER
             return placeholder

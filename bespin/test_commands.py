@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from unittest import TestCase
 from bespin.commands import Commands, Table, WorkflowDetails, JobFile, JobFileLoader, JobQuestionnaire, \
-    USER_VALUE_PLACEHOLDER, USER_FILE_PLACEHOLDER, IncompleteJobFileException
+    STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, USER_FILE_PLACEHOLDER, IncompleteJobFileException
 from mock import patch, call, Mock
 import yaml
 import json
@@ -338,15 +338,16 @@ class JobFileLoaderTestCase(TestCase):
     @patch('bespin.commands.yaml')
     def test_validate_job_file_data_invalid_name_and_fund_code(self, mock_yaml):
         mock_yaml.load.return_value = {
-            'name': USER_VALUE_PLACEHOLDER,
-            'fund_code': USER_VALUE_PLACEHOLDER,
+            'name': STRING_VALUE_PLACEHOLDER,
+            'fund_code': STRING_VALUE_PLACEHOLDER,
             'job_order': {},
             'workflow_tag': 'mytag',
         }
         job_file_loader = JobFileLoader(Mock())
         with self.assertRaises(IncompleteJobFileException) as raised_exception:
             job_file_loader.validate_job_file_data()
-        self.assertEqual(str(raised_exception.exception), 'Please fill in TODO field(s): name, fund_code')
+        self.assertEqual(str(raised_exception.exception),
+                         'Please fill in placeholder values for field(s): name, fund_code')
 
     @patch('bespin.commands.yaml')
     def test_validate_job_file_data_invalid_job_order_params(self, mock_yaml):
@@ -354,7 +355,7 @@ class JobFileLoaderTestCase(TestCase):
             'name': 'myjob',
             'fund_code': '0001',
             'job_order': {
-                'intval': USER_VALUE_PLACEHOLDER,
+                'intval': INT_VALUE_PLACEHOLDER,
                 'fileval': {
                     'class': 'File',
                     'path': USER_FILE_PLACEHOLDER
@@ -371,14 +372,20 @@ class JobFileLoaderTestCase(TestCase):
         with self.assertRaises(IncompleteJobFileException) as raised_exception:
             job_file_loader.validate_job_file_data()
         self.assertEqual(str(raised_exception.exception),
-                         'Please fill in TODO field(s): job_order.intval, job_order.fileval')
+                         'Please fill in placeholder values for field(s): job_order.intval, job_order.fileval')
 
     def test_value_contains_placeholder(self):
         data = [
             ('somevalue', False),
-            (USER_VALUE_PLACEHOLDER, True),
+            (STRING_VALUE_PLACEHOLDER, True),
+            ([STRING_VALUE_PLACEHOLDER], True),
+            (['test'], False),
             (USER_FILE_PLACEHOLDER, True),
             ({'class': 'File', 'path': USER_FILE_PLACEHOLDER}, True),
+            ([{'class': 'File', 'path': USER_FILE_PLACEHOLDER}], True),
+            ([{'class': 'File', 'path': 'some_real_path'}], False),
+            ({'it': {'class': 'File', 'path': USER_FILE_PLACEHOLDER}}, True),
+            ({'it': {'class': 'File', 'path': 'some_real_path'}}, False),
         ]
         for value, expected_result in data:
             self.assertEqual(JobFileLoader.value_contains_placeholder(value), expected_result)
@@ -400,8 +407,8 @@ class JobQuestionnaireTestCase(TestCase):
         })
         job_file = questionnaire.create_job_file_with_placeholders()
         self.assertEqual(job_file.workflow_tag, 'mytag')
-        self.assertEqual(job_file.name, USER_VALUE_PLACEHOLDER)
-        self.assertEqual(job_file.fund_code, USER_VALUE_PLACEHOLDER)
+        self.assertEqual(job_file.name, STRING_VALUE_PLACEHOLDER)
+        self.assertEqual(job_file.fund_code, STRING_VALUE_PLACEHOLDER)
         self.assertEqual(job_file.job_order, {})
 
     def test_format_user_fields(self):
@@ -418,7 +425,7 @@ class JobQuestionnaireTestCase(TestCase):
         })
         user_fields = questionnaire.format_user_fields()
         self.assertEqual(user_fields, {
-            'intary': [USER_VALUE_PLACEHOLDER], 'myint': USER_VALUE_PLACEHOLDER, 'mystr': USER_VALUE_PLACEHOLDER
+            'intary': [INT_VALUE_PLACEHOLDER], 'myint': INT_VALUE_PLACEHOLDER, 'mystr': STRING_VALUE_PLACEHOLDER
         })
 
     def test_create_placeholder_value(self):
@@ -428,13 +435,13 @@ class JobQuestionnaireTestCase(TestCase):
         })
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='string', is_array=False),
-            USER_VALUE_PLACEHOLDER)
+            STRING_VALUE_PLACEHOLDER)
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='int', is_array=False),
-            USER_VALUE_PLACEHOLDER)
+            INT_VALUE_PLACEHOLDER)
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='int', is_array=True),
-            [USER_VALUE_PLACEHOLDER])
+            [INT_VALUE_PLACEHOLDER])
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='File', is_array=False),
                 {
@@ -450,7 +457,7 @@ class JobQuestionnaireTestCase(TestCase):
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='NamedFASTQFilePairType', is_array=False),
             {
-                "name": USER_VALUE_PLACEHOLDER,
+                "name": STRING_VALUE_PLACEHOLDER,
                 "file1": {
                     "class": "File",
                     "path": USER_FILE_PLACEHOLDER
