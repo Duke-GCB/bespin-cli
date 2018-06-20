@@ -467,3 +467,16 @@ class JobQuestionnaireTestCase(TestCase):
                     "path": USER_FILE_PLACEHOLDER
                 }
             })
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='NamedFASTQFilePairType', is_array=True),
+            [{
+                "name": STRING_VALUE_PLACEHOLDER,
+                "file1": {
+                    "class": "File",
+                    "path": USER_FILE_PLACEHOLDER
+                },
+                "file2": {
+                    "class": "File",
+                    "path": USER_FILE_PLACEHOLDER
+                }
+            }])
