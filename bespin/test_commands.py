@@ -181,9 +181,29 @@ class JobFileTestCase(TestCase):
         job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={
             'myfile': {
                 'class': 'File',
-                'path': 'dds://project_somepath.txt'
+                'path': 'dds://project/somepath.txt'
             },
-            'myint': 123
+            'myint': 123,
+            'myfileary': [
+                {
+                    'class': 'File',
+                    'path': 'dds://project/somepath1.txt'
+                },
+                {
+                    'class': 'File',
+                    'path': 'dds://project/somepath2.txt'
+                },
+            ],
+            'myfastq_pairs': [
+                {'file1':
+                     {'class': 'File',
+                      'path': 'dds://myproject/rawData/SAAAA_R1_001.fastq.gz'
+                     },
+                 'file2': {
+                     'class': 'File',
+                     'path': 'dds://myproject/rawData/SAAAA_R2_001.fastq.gz'
+                },
+                'name': 'Sample1'}]
         })
         user_job_order = json.loads(job_file.create_user_job_order_json())
         self.assertEqual(user_job_order['myint'], 123)
@@ -191,6 +211,44 @@ class JobFileTestCase(TestCase):
             'class': 'File',
             'path': 'dds_project_somepath.txt'
         })
+        self.assertEqual(user_job_order['myfileary'], [
+                {
+                    'class': 'File',
+                    'path': 'dds_project_somepath1.txt'
+                },
+                {
+                    'class': 'File',
+                    'path': 'dds_project_somepath2.txt'
+                },
+            ])
+        self.assertEqual(user_job_order['myfastq_pairs'], [
+                {'file1':
+                     {'class': 'File',
+                      'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'
+                     },
+                 'file2': {
+                     'class': 'File',
+                     'path': 'dds_myproject_rawData_SAAAA_R2_001.fastq.gz'
+                },
+                'name': 'Sample1'}])
+
+    def test_recursive_format_file_path(self):
+        job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={})
+        data = [
+            # input    expected
+            ('value', 'value'),
+            (['v1','v2'], ['v1','v2']),
+            ([1, 2], [1, 2]),
+            ({'class': 'File','path': 'dds:myproject/rawData/SAAAA_R1_001.fastq.gz'},  # input
+             {'class': 'File', 'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'}),  # expected
+            ([{'class': 'File', 'path': 'dds:myproject/rawData/SAAAA_R1_001.fastq.gz'}],  # input
+             [{'class': 'File', 'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'}]),  # expected
+            ({'it':{'class': 'File', 'path': 'dds:myproject/rawData/SAAAA_R1_001.fastq.gz'}},  # input
+             {'it':{'class': 'File', 'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'}}),  # expected
+
+        ]
+        for input_val, expected_val in data:
+            self.assertEqual(job_file.recursive_format_file_path(input_val), expected_val)
 
     def test_format_file_path(self):
         self.assertEqual(JobFile.format_file_path('/tmp/data'), '_tmp_data')

@@ -208,10 +208,28 @@ class JobFile(object):
         user_job_order = {}
         for key in self.job_order.keys():
             value = self.job_order[key]
-            if isinstance(value, dict) and value['class'] == 'File':
-                value['path'] = self.format_file_path(value['path'])
-            user_job_order[key] = value
+            user_job_order[key] = self.recursive_format_file_path(value)
+        print(user_job_order)
         return json.dumps(user_job_order)
+
+    def recursive_format_file_path(self, obj):
+        """
+        Given an CWL job order property value format files inside it.
+        :param obj: object: dict or list or simple value, can be recursive data structure.
+        :return: obj: formatted replacing file urls
+        """
+        if isinstance(obj, list) and not isinstance(obj, str):
+            return [self.recursive_format_file_path(item) for item in obj]
+        elif isinstance(obj, dict):
+            if 'class' in obj and obj['class'] == 'File':
+                obj['path'] = self.format_file_path(obj['path'])
+                return obj
+            else:
+                for key in obj:
+                    value = obj[key]
+                    obj[key] = self.recursive_format_file_path(value)
+                return obj
+        return obj
 
     @staticmethod
     def format_file_path(path):
