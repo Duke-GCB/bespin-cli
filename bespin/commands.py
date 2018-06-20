@@ -10,12 +10,12 @@ import sys
 
 STRING_VALUE_PLACEHOLDER = "<String Value>"
 INT_VALUE_PLACEHOLDER = "<Integer Value>"
-USER_FILE_PLACEHOLDER = "dds://<Project Name>/<File Path>"
-USER_PLACEHOLDER_VALUES = [STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, USER_FILE_PLACEHOLDER]
+FILE_PLACEHOLDER = "dds://<Project Name>/<File Path>"
+USER_PLACEHOLDER_VALUES = [STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, FILE_PLACEHOLDER]
 USER_PLACEHOLDER_DICT = {
     'File': {
         "class": "File",
-        "path": USER_FILE_PLACEHOLDER
+        "path": FILE_PLACEHOLDER
     },
     'int': INT_VALUE_PLACEHOLDER,
     'string': STRING_VALUE_PLACEHOLDER,
@@ -23,18 +23,14 @@ USER_PLACEHOLDER_DICT = {
         "name": STRING_VALUE_PLACEHOLDER,
         "file1": {
             "class": "File",
-            "path": USER_FILE_PLACEHOLDER
+            "path": FILE_PLACEHOLDER
         },
         "file2": {
             "class": "File",
-            "path": USER_FILE_PLACEHOLDER
+            "path": FILE_PLACEHOLDER
         }
     }
 }
-
-
-def is_list_but_not_string(obj):
-    return isinstance(obj, list) and not isinstance(obj, str)
 
 
 class Commands(object):
@@ -210,54 +206,19 @@ class JobFile(object):
         Format job order replacing dds remote file paths with filenames that will be staged
         :return: dict: job order for running CWL
         """
-        user_job_order = {}
-        for key in self.job_order.keys():
-            value = self.job_order[key]
-            user_job_order[key] = self.recursive_format_file_path(value)
+        user_job_order = self.job_order.copy()
+        formatter = JobOrderFormatFiles()
+        formatter.walk(user_job_order)
         return json.dumps(user_job_order)
-
-    def recursive_format_file_path(self, obj):
-        """
-        Given an CWL job order property value format files inside it.
-        :param obj: object: dict or list or simple value, can be recursive data structure.
-        :return: obj: formatted replacing file urls
-        """
-        if is_list_but_not_string(obj):
-            return [self.recursive_format_file_path(item) for item in obj]
-        elif isinstance(obj, dict):
-            if 'class' in obj and obj['class'] == 'File':
-                obj['path'] = self.format_file_path(obj['path'])
-                return obj
-            else:
-                for key in obj:
-                    value = obj[key]
-                    obj[key] = self.recursive_format_file_path(value)
-                return obj
-        return obj
-
-    @staticmethod
-    def format_file_path(path):
-        """
-        Create a valid file path based on a dds placeholder url
-        :param path: str: format dds://<projectname>/<filepath>
-        :return: str: file path to be used for staging data when running the workflow
-        """
-        return path.replace("dds://", "dds_").replace("/", "_").replace(":", "_")
 
     def get_dds_files_details(self):
         """
         Get dds files info based on job_order
         :return: [(dds_file, staging_filename)]
         """
-        dds_file_util = DDSFileUtil()
-        dds_files = []
-        for key in self.job_order.keys():
-            value = self.job_order[key]
-            if isinstance(value, dict) and value['class'] == 'File':
-                path = value['path']
-                dds_file = dds_file_util.find_file_for_path(path)
-                dds_files.append((dds_file, self.format_file_path(path)))
-        return dds_files
+        job_order_details = JobOrderFileDetails()
+        job_order_details.walk(self.job_order)
+        return job_order_details.dds_files
 
     def create_job(self, api):
         """
@@ -304,35 +265,16 @@ class JobFileLoader(object):
     def validate_job_file_data(self):
         bad_fields = []
         for field_name in ['name', 'fund_code']:
-            if self.value_contains_placeholder(self.data[field_name]):
+            if self.data[field_name] in USER_PLACEHOLDER_VALUES:
                 bad_fields.append(field_name)
-        job_order = self.data['job_order']
-        for jo_field_name in job_order.keys():
-            if self.value_contains_placeholder(job_order[jo_field_name]):
-                bad_fields.append("job_order.{}".format(jo_field_name))
+        checker = JobOrderPlaceholderCheck()
+        checker.walk(self.data['job_order'])
+        bad_fields.extend(['job_order.{}'.format(key) for key in checker.keys_with_placeholders])
         if bad_fields:
-            raise IncompleteJobFileException("Please fill in placeholder values for field(s): {}".format(', '.join(bad_fields)))
-
-    @staticmethod
-    def value_contains_placeholder(obj):
-        if isinstance(obj, dict):
-            obj_class = obj.get('class')
-            if obj_class == 'File':
-                return obj['path'] in USER_PLACEHOLDER_VALUES
-            else:
-                if obj_class:
-                    raise ValueError("Unknown class {}".format(obj_class))
-                for value in obj.values():
-                    if JobFileLoader.value_contains_placeholder(value):
-                        return True
-                return False
-        elif is_list_but_not_string(obj):
-            for value in obj:
-                if JobFileLoader.value_contains_placeholder(value):
-                    return True
-            return False
-        else:
-            return obj in USER_PLACEHOLDER_VALUES
+            bad_fields.sort()
+            bad_fields_str = ', '.join(bad_fields)
+            error_msg = "Please fill in placeholder values for field(s): {}".format(bad_fields_str)
+            raise IncompleteJobFileException(error_msg)
 
 
 class JobQuestionnaire(object):
@@ -374,3 +316,74 @@ class JobQuestionnaire(object):
             if not placeholder:
                 return STRING_VALUE_PLACEHOLDER
             return placeholder
+
+
+class JobOrderWalker(object):
+    def walk(self, obj):
+        for key in obj.keys():
+            self._walk_job_order(key, obj[key])
+
+    def _walk_job_order(self, top_level_key, obj):
+        if self._is_list_but_not_string(obj):
+            return [self._walk_job_order(top_level_key, item) for item in obj]
+        elif isinstance(obj, dict):
+            if 'class' in obj.keys():
+                self.on_class_value(top_level_key, obj)
+            else:
+                for key in obj:
+                    self._walk_job_order(top_level_key, obj[key])
+        else:
+            # base object string or int or something
+            self.on_simple_value(top_level_key, obj)
+
+    @staticmethod
+    def _is_list_but_not_string(obj):
+        return isinstance(obj, list) and not isinstance(obj, str)
+
+    def on_class_value(self, top_level_key, value):
+        pass
+
+    def on_simple_value(self, top_level_key, value):
+        pass
+
+    @staticmethod
+    def format_file_path(path):
+        """
+        Create a valid file path based on a dds placeholder url
+        :param path: str: format dds://<projectname>/<filepath>
+        :return: str: file path to be used for staging data when running the workflow
+        """
+        if path.startswith("dds://"):
+            return path.replace("dds://", "dds_").replace("/", "_").replace(":", "_")
+        return path
+
+
+class JobOrderPlaceholderCheck(JobOrderWalker):
+    def __init__(self):
+        self.keys_with_placeholders = set()
+
+    def on_class_value(self, top_level_key, value):
+        if value['class'] == 'File' and value['path'] in USER_PLACEHOLDER_VALUES:
+            self.keys_with_placeholders.add(top_level_key)
+
+    def on_simple_value(self, top_level_key, value):
+        if value in USER_PLACEHOLDER_VALUES:
+            self.keys_with_placeholders.add(top_level_key)
+
+
+class JobOrderFormatFiles(JobOrderWalker):
+    def on_class_value(self, top_level_key, value):
+        if value['class'] == 'File':
+            value['path'] = self.format_file_path(value['path'])
+
+
+class JobOrderFileDetails(JobOrderWalker):
+    def __init__(self):
+        self.dds_file_util = DDSFileUtil()
+        self.dds_files = []
+
+    def on_class_value(self, top_level_key, value):
+        if value['class'] == 'File':
+            path = value['path']
+            dds_file = self.dds_file_util.find_file_for_path(path)
+            self.dds_files.append((dds_file, self.format_file_path(path)))

@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 from unittest import TestCase
 from bespin.commands import Commands, Table, WorkflowDetails, JobFile, JobFileLoader, JobQuestionnaire, \
-    STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, USER_FILE_PLACEHOLDER, IncompleteJobFileException
+    STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, FILE_PLACEHOLDER, IncompleteJobFileException, \
+    JobOrderWalker, JobOrderPlaceholderCheck, JobOrderFormatFiles, JobOrderFileDetails
 from mock import patch, call, Mock
 import yaml
 import json
@@ -198,12 +199,12 @@ class JobFileTestCase(TestCase):
                 {'file1':
                      {'class': 'File',
                       'path': 'dds://myproject/rawData/SAAAA_R1_001.fastq.gz'
-                     },
+                      },
                  'file2': {
                      'class': 'File',
                      'path': 'dds://myproject/rawData/SAAAA_R2_001.fastq.gz'
-                },
-                'name': 'Sample1'}]
+                 },
+                 'name': 'Sample1'}]
         })
         user_job_order = json.loads(job_file.create_user_job_order_json())
         self.assertEqual(user_job_order['myint'], 123)
@@ -212,48 +213,25 @@ class JobFileTestCase(TestCase):
             'path': 'dds_project_somepath.txt'
         })
         self.assertEqual(user_job_order['myfileary'], [
-                {
-                    'class': 'File',
-                    'path': 'dds_project_somepath1.txt'
-                },
-                {
-                    'class': 'File',
-                    'path': 'dds_project_somepath2.txt'
-                },
-            ])
+            {
+                'class': 'File',
+                'path': 'dds_project_somepath1.txt'
+            },
+            {
+                'class': 'File',
+                'path': 'dds_project_somepath2.txt'
+            },
+        ])
         self.assertEqual(user_job_order['myfastq_pairs'], [
-                {'file1':
-                     {'class': 'File',
-                      'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'
-                     },
-                 'file2': {
-                     'class': 'File',
-                     'path': 'dds_myproject_rawData_SAAAA_R2_001.fastq.gz'
-                },
-                'name': 'Sample1'}])
-
-    def test_recursive_format_file_path(self):
-        job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={})
-        data = [
-            # input    expected
-            ('value', 'value'),
-            (['v1','v2'], ['v1','v2']),
-            ([1, 2], [1, 2]),
-            ({'class': 'File','path': 'dds:myproject/rawData/SAAAA_R1_001.fastq.gz'},  # input
-             {'class': 'File', 'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'}),  # expected
-            ([{'class': 'File', 'path': 'dds:myproject/rawData/SAAAA_R1_001.fastq.gz'}],  # input
-             [{'class': 'File', 'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'}]),  # expected
-            ({'it':{'class': 'File', 'path': 'dds:myproject/rawData/SAAAA_R1_001.fastq.gz'}},  # input
-             {'it':{'class': 'File', 'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'}}),  # expected
-
-        ]
-        for input_val, expected_val in data:
-            self.assertEqual(job_file.recursive_format_file_path(input_val), expected_val)
-
-    def test_format_file_path(self):
-        self.assertEqual(JobFile.format_file_path('/tmp/data'), '_tmp_data')
-        self.assertEqual(JobFile.format_file_path('dds://project/somepath.txt'), 'dds_project_somepath.txt')
-        self.assertEqual(JobFile.format_file_path('dds://project/dir/somepath.txt'), 'dds_project_dir_somepath.txt')
+            {'file1':
+                 {'class': 'File',
+                  'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'
+                  },
+             'file2': {
+                 'class': 'File',
+                 'path': 'dds_myproject_rawData_SAAAA_R2_001.fastq.gz'
+             },
+             'name': 'Sample1'}])
 
     @patch('bespin.commands.DDSFileUtil')
     def test_get_dds_files_details(self, mock_dds_file_util):
@@ -347,7 +325,7 @@ class JobFileLoaderTestCase(TestCase):
         with self.assertRaises(IncompleteJobFileException) as raised_exception:
             job_file_loader.validate_job_file_data()
         self.assertEqual(str(raised_exception.exception),
-                         'Please fill in placeholder values for field(s): name, fund_code')
+                         'Please fill in placeholder values for field(s): fund_code, name')
 
     @patch('bespin.commands.yaml')
     def test_validate_job_file_data_invalid_job_order_params(self, mock_yaml):
@@ -358,7 +336,7 @@ class JobFileLoaderTestCase(TestCase):
                 'intval': INT_VALUE_PLACEHOLDER,
                 'fileval': {
                     'class': 'File',
-                    'path': USER_FILE_PLACEHOLDER
+                    'path': FILE_PLACEHOLDER
                 },
                 'otherint': 123,
                 'otherfile': {
@@ -372,31 +350,7 @@ class JobFileLoaderTestCase(TestCase):
         with self.assertRaises(IncompleteJobFileException) as raised_exception:
             job_file_loader.validate_job_file_data()
         self.assertEqual(str(raised_exception.exception),
-                         'Please fill in placeholder values for field(s): job_order.intval, job_order.fileval')
-
-    def test_value_contains_placeholder(self):
-        data = [
-            ('somevalue', False),
-            (STRING_VALUE_PLACEHOLDER, True),
-            ([STRING_VALUE_PLACEHOLDER], True),
-            (['test'], False),
-            (USER_FILE_PLACEHOLDER, True),
-            ({'class': 'File', 'path': USER_FILE_PLACEHOLDER}, True),
-            ([{'class': 'File', 'path': USER_FILE_PLACEHOLDER}], True),
-            ([{'class': 'File', 'path': 'some_real_path'}], False),
-            ({'it': {'class': 'File', 'path': USER_FILE_PLACEHOLDER}}, True),
-            ({'it': {'class': 'File', 'path': 'some_real_path'}}, False),
-        ]
-        for value, expected_result in data:
-            self.assertEqual(JobFileLoader.value_contains_placeholder(value), expected_result)
-
-        unknown_class_dict = {
-            'class': 'StrangeData',
-            'value': 'StrangeValue'
-        }
-        with self.assertRaises(ValueError) as raised_value_exception:
-            JobFileLoader.value_contains_placeholder(unknown_class_dict)
-        self.assertEqual(str(raised_value_exception.exception), 'Unknown class StrangeData')
+                         'Please fill in placeholder values for field(s): job_order.fileval, job_order.intval')
 
 
 class JobQuestionnaireTestCase(TestCase):
@@ -444,27 +398,27 @@ class JobQuestionnaireTestCase(TestCase):
             [INT_VALUE_PLACEHOLDER])
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='File', is_array=False),
-                {
-                    "class": "File",
-                    "path": USER_FILE_PLACEHOLDER
-                })
+            {
+                "class": "File",
+                "path": FILE_PLACEHOLDER
+            })
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='File', is_array=True),
-                [{
-                    "class": "File",
-                    "path": USER_FILE_PLACEHOLDER
-                }])
+            [{
+                "class": "File",
+                "path": FILE_PLACEHOLDER
+            }])
         self.assertEqual(
             questionnaire.create_placeholder_value(type_name='NamedFASTQFilePairType', is_array=False),
             {
                 "name": STRING_VALUE_PLACEHOLDER,
                 "file1": {
                     "class": "File",
-                    "path": USER_FILE_PLACEHOLDER
+                    "path": FILE_PLACEHOLDER
                 },
                 "file2": {
                     "class": "File",
-                    "path": USER_FILE_PLACEHOLDER
+                    "path": FILE_PLACEHOLDER
                 }
             })
         self.assertEqual(
@@ -473,10 +427,181 @@ class JobQuestionnaireTestCase(TestCase):
                 "name": STRING_VALUE_PLACEHOLDER,
                 "file1": {
                     "class": "File",
-                    "path": USER_FILE_PLACEHOLDER
+                    "path": FILE_PLACEHOLDER
                 },
                 "file2": {
                     "class": "File",
-                    "path": USER_FILE_PLACEHOLDER
+                    "path": FILE_PLACEHOLDER
                 }
             }])
+
+
+class JobOrderWalkerTestCase(TestCase):
+    def test_walk(self):
+        walker = JobOrderWalker()
+        walker.on_class_value = Mock()
+        walker.on_simple_value = Mock()
+        walker.walk({
+            'color': 'red',
+            'weight': 123,
+            'file1': {
+                'class': 'File',
+                'path': 'somepath'
+            },
+            'file_ary': [
+                {
+                    'class': 'File',
+                    'path': 'somepath1'
+                }, {
+                    'class': 'File',
+                    'path': 'somepath2'
+                },
+            ],
+            'nested': {
+                'a': [{
+                    'class': 'File',
+                    'path': 'somepath3'
+                }]
+            }
+        })
+
+        walker.on_simple_value.assert_has_calls([
+            call('color', 'red'),
+            call('weight', 123),
+        ])
+        walker.on_class_value.assert_has_calls([
+            call('file1', {'class': 'File', 'path': 'somepath'}),
+            call('file_ary', {'class': 'File', 'path': 'somepath1'}),
+            call('file_ary', {'class': 'File', 'path': 'somepath2'}),
+            call('nested', {'class': 'File', 'path': 'somepath3'}),
+        ])
+
+    def test_format_file_path(self):
+        data = [
+            # input    expected
+            ('https://placeholder.data/stuff/data.txt', 'https://placeholder.data/stuff/data.txt'),
+            ('dds://myproject/rawData/SAAAA_R1_001.fastq.gz', 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'),
+            ('dds://project/somepath.txt', 'dds_project_somepath.txt'),
+            ('dds://project/dir/somepath.txt', 'dds_project_dir_somepath.txt'),
+        ]
+        for input_val, expected_val in data:
+            self.assertEqual(JobOrderWalker.format_file_path(input_val), expected_val)
+
+
+class JobOrderPlaceholderCheckTestCase(TestCase):
+    def test_walk(self):
+        job_order = {
+            'good_str': 'a',
+            'bad_str': STRING_VALUE_PLACEHOLDER,
+            'good_int': 123,
+            'bad_int': INT_VALUE_PLACEHOLDER,
+            'good_file': {
+                'class': 'File',
+                'path': 'somepath.txt',
+            },
+            'bad_file': {
+                'class': 'File',
+                'path': FILE_PLACEHOLDER,
+            },
+            'good_str_ary': ['a', 'b', 'c'],
+            'bad_str_ary': ['a', STRING_VALUE_PLACEHOLDER, 'c'],
+            'good_file_ary': [{
+                'class': 'File',
+                'path': 'somepath.txt',
+            }],
+            'bad_file_ary': [{
+                'class': 'File',
+                'path': FILE_PLACEHOLDER,
+            }],
+            'good_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': 'somepath.txt',
+                }
+            },
+            'bad_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': FILE_PLACEHOLDER,
+                }
+            },
+        }
+        expected_keys = [
+            'bad_str', 'bad_int', 'bad_file', 'bad_str_ary', 'bad_file_ary', 'bad_file_dict',
+        ]
+
+        checker = JobOrderPlaceholderCheck()
+        checker.walk(job_order)
+
+        self.assertEqual(checker.keys_with_placeholders, set(expected_keys))
+
+
+class JobOrderFormatFilesTestCase(TestCase):
+    def test_walk(self):
+        job_order = {
+            'good_str': 'a',
+            'good_int': 123,
+            'good_file': {
+                'class': 'File',
+                'path': 'dds://project1/data/somepath.txt',
+            },
+            'good_str_ary': ['a', 'b', 'c'],
+            'good_file_ary': [{
+                'class': 'File',
+                'path': 'dds://project2/data/somepath2.txt',
+            }],
+            'good_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': 'dds://project3/data/other/somepath.txt',
+                }
+            },
+        }
+
+        formatter = JobOrderFormatFiles()
+        formatter.walk(job_order)
+
+        self.assertEqual(job_order['good_str'], 'a')
+        self.assertEqual(job_order['good_int'], 123)
+        self.assertEqual(job_order['good_file'],
+                         {'class': 'File', 'path': 'dds_project1_data_somepath.txt'})
+        self.assertEqual(job_order['good_str_ary'], ['a', 'b', 'c'])
+        self.assertEqual(job_order['good_file_ary'],
+                         [{'class': 'File', 'path': 'dds_project2_data_somepath2.txt'}])
+        self.assertEqual(job_order['good_file_dict'],
+                         {'stuff': {'class': 'File', 'path': 'dds_project3_data_other_somepath.txt'}})
+
+
+class JobOrderFileDetailsTestCase(TestCase):
+    @patch('bespin.commands.DDSFileUtil')
+    def test_walk(self, mock_dds_file_util):
+        mock_dds_file_util.return_value.find_file_for_path.return_value = 'ddsfiledata'
+        job_order = {
+            'good_str': 'a',
+            'good_int': 123,
+            'good_file': {
+                'class': 'File',
+                'path': 'dds://project1/data/somepath.txt',
+            },
+            'good_str_ary': ['a', 'b', 'c'],
+            'good_file_ary': [{
+                'class': 'File',
+                'path': 'dds://project2/data/somepath2.txt',
+            }],
+            'good_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': 'dds://project3/data/other/somepath.txt',
+                }
+            },
+        }
+        expected_dds_file_info = [
+            ('ddsfiledata', 'dds_project1_data_somepath.txt'),
+            ('ddsfiledata', 'dds_project2_data_somepath2.txt'),
+            ('ddsfiledata', 'dds_project3_data_other_somepath.txt')
+        ]
+
+        details = JobOrderFileDetails()
+        details.walk(job_order)
+
+        self.assertEqual(details.dds_files, expected_dds_file_info)
