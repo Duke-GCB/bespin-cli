@@ -1,0 +1,607 @@
+from __future__ import absolute_import
+from unittest import TestCase
+from bespin.commands import Commands, Table, WorkflowDetails, JobFile, JobFileLoader, JobQuestionnaire, \
+    STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, FILE_PLACEHOLDER, IncompleteJobFileException, \
+    JobOrderWalker, JobOrderPlaceholderCheck, JobOrderFormatFiles, JobOrderFileDetails
+from mock import patch, call, Mock
+import yaml
+import json
+
+
+class CommandsTestCase(TestCase):
+    def setUp(self):
+        self.version_str = 'v1'
+        self.user_agent_str = 'user_agent'
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.WorkflowDetails')
+    @patch('bespin.commands.Table')
+    @patch('bespin.commands.print')
+    def test_workflows_list(self, mock_print, mock_table, mock_workflow_details, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.workflows_list()
+        workflow_details = mock_workflow_details.return_value
+        mock_table.assert_called_with(workflow_details.column_names,
+                                      workflow_details.get_column_data.return_value)
+        mock_print.assert_called_with(mock_table.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.Table')
+    @patch('bespin.commands.print')
+    def test_jobs_list(self, mock_print, mock_table, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.jobs_list()
+
+        mock_table.assert_called_with(["id", "name", "state", "step", "fund_code", "created", "last_updated"],
+                                      mock_bespin_api.return_value.jobs_list.return_value)
+        mock_print.assert_called_with(mock_table.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.JobQuestionnaire')
+    @patch('bespin.commands.print')
+    def test_init_job(self, mock_print, mock_job_questionnaire, mock_bespin_api, mock_config_file):
+        mock_outfile = Mock()
+
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.init_job(tag='rnaseq/v1/human', outfile=mock_outfile)
+
+        mock_bespin_api.return_value.questionnaires_list.assert_called_with(tag='rnaseq/v1/human')
+        mock_job_file = mock_job_questionnaire.return_value.create_job_file_with_placeholders.return_value
+        mock_outfile.write.assert_called_with(mock_job_file.yaml_str.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.JobFileLoader')
+    @patch('bespin.commands.print')
+    def test_create_job(self, mock_print, mock_job_file_loader, mock_bespin_api, mock_config_file):
+        mock_infile = Mock()
+        mock_job_file_loader.return_value.create_job_file.return_value.create_job.return_value = {'id': 1}
+
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.create_job(infile=mock_infile)
+
+        mock_job_file_loader.assert_called_with(mock_infile)
+        mock_print.assert_has_calls([
+            call("Created job 1"),
+            call("To start this job run `bespin jobs start 1 --token _RUN_JOB_TOKEN_ >` .")])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    def test_start_job_with_token(self, mock_print, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.start_job(job_id=1, token='secret')
+
+        mock_bespin_api.return_value.authorize_job.assert_called_with(1, 'secret')
+        mock_bespin_api.return_value.start_job.assert_called_with(1)
+        mock_print.assert_has_calls([
+            call('Set run token for job 1'),
+            call('Started job 1')
+        ])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    def test_start_job_no_token(self, mock_print, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.start_job(job_id=1)
+
+        self.assertFalse(mock_bespin_api.return_value.authorize_job.called)
+        mock_bespin_api.return_value.start_job.assert_called_with(1)
+        mock_print.assert_has_calls([
+            call("Started job 1")
+        ])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    def test_cancel_job(self, mock_print, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.cancel_job(job_id=2)
+
+        self.assertFalse(mock_bespin_api.return_value.authorize_job.called)
+        mock_bespin_api.return_value.cancel_job.assert_called_with(2)
+        mock_print.assert_has_calls([
+            call("Canceled job 2")
+        ])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    def test_restart_job(self, mock_print, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.restart_job(job_id=2)
+
+        self.assertFalse(mock_bespin_api.return_value.authorize_job.called)
+        mock_bespin_api.return_value.restart_job.assert_called_with(2)
+        mock_print.assert_has_calls([
+            call("Restarted job 2")
+        ])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    def test_delete_job(self, mock_print, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.delete_job(job_id=3)
+
+        self.assertFalse(mock_bespin_api.return_value.authorize_job.called)
+        mock_bespin_api.return_value.delete_job.assert_called_with(3)
+        mock_print.assert_has_calls([
+            call("Deleted job 3")
+        ])
+
+
+class TableTestCase(TestCase):
+    @patch('bespin.commands.tabulate')
+    def test_str(self, mock_tabulate):
+        table = Table(column_names=['col_1', 'col_2'], items=[
+            {'col_1': 'A', 'col_2': 'B'},
+            {'col_1': 'C', 'col_2': 'D'},
+        ])
+        self.assertEqual(table.__str__(), mock_tabulate.return_value)
+        mock_tabulate.assert_called_with([['A', 'B'], ['C', 'D']], headers=['Col 1', 'Col 2'])
+
+
+class WorkflowDetailsTestCase(TestCase):
+    def test_get_column_data(self):
+        mock_api = Mock()
+        mock_api.workflows_list.return_value = [
+            {'id': 1, 'name': 'exome', 'versions': [1, 2]}
+        ]
+        mock_api.questionnaires_list.return_value = [
+            {'tag': 'exome/v2/human'}
+        ]
+        details = WorkflowDetails(mock_api)
+        expected_data = [{'id': 1,
+                          'latest version tag': 'exome/v2/human',
+                          'name': 'exome',
+                          'versions': [1, 2]}]
+        column_data = details.get_column_data()
+        self.assertEqual(len(column_data), 1)
+        self.assertEqual(column_data, expected_data)
+        mock_api.questionnaires_list.assert_called_with(workflow_version=2)
+
+
+class JobFileTestCase(TestCase):
+    def test_yaml_str(self):
+        job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={})
+        yaml_str = job_file.yaml_str()
+        expected_dict = {
+            'fund_code': '001',
+            'job_order': {},
+            'name': 'myjob',
+            'workflow_tag': 'sometag'
+        }
+        self.assertEqual(yaml.load(yaml_str), expected_dict)
+
+    def test_create_user_job_order_json(self):
+        job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={
+            'myfile': {
+                'class': 'File',
+                'path': 'dds://project/somepath.txt'
+            },
+            'myint': 123,
+            'myfileary': [
+                {
+                    'class': 'File',
+                    'path': 'dds://project/somepath1.txt'
+                },
+                {
+                    'class': 'File',
+                    'path': 'dds://project/somepath2.txt'
+                },
+            ],
+            'myfastq_pairs': [
+                {'file1':
+                     {'class': 'File',
+                      'path': 'dds://myproject/rawData/SAAAA_R1_001.fastq.gz'
+                      },
+                 'file2': {
+                     'class': 'File',
+                     'path': 'dds://myproject/rawData/SAAAA_R2_001.fastq.gz'
+                 },
+                 'name': 'Sample1'}]
+        })
+        user_job_order = json.loads(job_file.create_user_job_order_json())
+        self.assertEqual(user_job_order['myint'], 123)
+        self.assertEqual(user_job_order['myfile'], {
+            'class': 'File',
+            'path': 'dds_project_somepath.txt'
+        })
+        self.assertEqual(user_job_order['myfileary'], [
+            {
+                'class': 'File',
+                'path': 'dds_project_somepath1.txt'
+            },
+            {
+                'class': 'File',
+                'path': 'dds_project_somepath2.txt'
+            },
+        ])
+        self.assertEqual(user_job_order['myfastq_pairs'], [
+            {'file1':
+                 {'class': 'File',
+                  'path': 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'
+                  },
+             'file2': {
+                 'class': 'File',
+                 'path': 'dds_myproject_rawData_SAAAA_R2_001.fastq.gz'
+             },
+             'name': 'Sample1'}])
+
+    @patch('bespin.commands.DDSFileUtil')
+    def test_get_dds_files_details(self, mock_dds_file_util):
+        mock_dds_file_util.return_value.find_file_for_path.return_value = 'filedata1'
+        job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={
+            'myfile': {
+                'class': 'File',
+                'path': 'dds://project_somepath.txt'
+            },
+            'myint': 123
+        })
+        file_details = job_file.get_dds_files_details()
+        self.assertEqual(file_details, [('filedata1', 'dds_project_somepath.txt')])
+
+    @patch('bespin.commands.DDSFileUtil')
+    def test_create_job(self, mock_dds_file_util):
+        mock_dds_file_util.return_value.find_file_for_path.return_value = 'filedata1'
+        mock_api = Mock()
+        mock_api.dds_user_credentials_list.return_value = [{'id': 111, 'dds_id': 112}]
+        mock_api.questionnaires_list.return_value = [
+            {
+                'id': 222
+            }
+        ]
+        mock_api.stage_group_post.return_value = {
+            'id': 333
+        }
+        mock_api.job_answer_set_post.return_value = {
+            'id': 444
+        }
+        job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={
+            'myfile': {
+                'class': 'File',
+                'path': 'dds://project_somepath.txt'
+            },
+            'myint': 555
+        })
+        job_file.get_dds_files_details = Mock()
+        mock_file = Mock(project_id=666)
+        mock_file.id = 777
+        job_file.get_dds_files_details.return_value = [[mock_file, 'somepath']]
+
+        job_file.create_job(mock_api)
+
+        mock_api.questionnaires_list.assert_called_with(tag='sometag')
+        mock_api.dds_job_input_files_post.assert_called_with(666, 777, 'somepath', 0, 0, 111, stage_group_id=333)
+        json_payload = '{"myfile": {"class": "File", "path": "dds_project_somepath.txt"}, "myint": 555}'
+        mock_api.job_answer_set_post.assert_called_with('myjob', '001', json_payload, 222, 333)
+        mock_api.job_answer_set_create_job.assert_called_with(444)
+        mock_dds_file_util.return_value.give_download_permissions.assert_called_with(666, 112)
+
+
+class JobFileLoaderTestCase(TestCase):
+    @patch('bespin.commands.yaml')
+    def test_create_job_file(self, mock_yaml):
+        mock_yaml.load.return_value = {
+            'name': 'myjob',
+            'fund_code': '0001',
+            'job_order': {},
+            'workflow_tag': 'mytag',
+        }
+        job_file_loader = JobFileLoader(Mock())
+        job_file_loader.validate_job_file_data = Mock()
+        job_file = job_file_loader.create_job_file()
+
+        self.assertEqual(job_file.name, 'myjob')
+        self.assertEqual(job_file.fund_code, '0001')
+        self.assertEqual(job_file.job_order, {})
+        self.assertEqual(job_file.workflow_tag, 'mytag')
+
+    @patch('bespin.commands.yaml')
+    def test_validate_job_file_data_ok(self, mock_yaml):
+        mock_yaml.load.return_value = {
+            'name': 'myjob',
+            'fund_code': '0001',
+            'job_order': {},
+            'workflow_tag': 'mytag',
+        }
+        job_file_loader = JobFileLoader(Mock())
+        job_file_loader.validate_job_file_data()
+
+    @patch('bespin.commands.yaml')
+    def test_validate_job_file_data_invalid_name_and_fund_code(self, mock_yaml):
+        mock_yaml.load.return_value = {
+            'name': STRING_VALUE_PLACEHOLDER,
+            'fund_code': STRING_VALUE_PLACEHOLDER,
+            'job_order': {},
+            'workflow_tag': 'mytag',
+        }
+        job_file_loader = JobFileLoader(Mock())
+        with self.assertRaises(IncompleteJobFileException) as raised_exception:
+            job_file_loader.validate_job_file_data()
+        self.assertEqual(str(raised_exception.exception),
+                         'Please fill in placeholder values for field(s): fund_code, name')
+
+    @patch('bespin.commands.yaml')
+    def test_validate_job_file_data_invalid_job_order_params(self, mock_yaml):
+        mock_yaml.load.return_value = {
+            'name': 'myjob',
+            'fund_code': '0001',
+            'job_order': {
+                'intval': INT_VALUE_PLACEHOLDER,
+                'fileval': {
+                    'class': 'File',
+                    'path': FILE_PLACEHOLDER
+                },
+                'otherint': 123,
+                'otherfile': {
+                    'class': 'File',
+                    'path': 'somefile.txt'
+                },
+            },
+            'workflow_tag': 'mytag',
+        }
+        job_file_loader = JobFileLoader(Mock())
+        with self.assertRaises(IncompleteJobFileException) as raised_exception:
+            job_file_loader.validate_job_file_data()
+        self.assertEqual(str(raised_exception.exception),
+                         'Please fill in placeholder values for field(s): job_order.fileval, job_order.intval')
+
+
+class JobQuestionnaireTestCase(TestCase):
+    def test_create_job_file_with_placeholders(self):
+        questionnaire = JobQuestionnaire({
+            'tag': 'mytag',
+            'user_fields_json': '{}'
+        })
+        job_file = questionnaire.create_job_file_with_placeholders()
+        self.assertEqual(job_file.workflow_tag, 'mytag')
+        self.assertEqual(job_file.name, STRING_VALUE_PLACEHOLDER)
+        self.assertEqual(job_file.fund_code, STRING_VALUE_PLACEHOLDER)
+        self.assertEqual(job_file.job_order, {})
+
+    def test_format_user_fields(self):
+        user_fields_str = """
+            [
+                {"type":"int", "name":"myint"},
+                {"type":"string", "name":"mystr"},
+                {"type": {"type": "array",  "items":"int"}, "name":"intary"}
+            ]
+        """
+        questionnaire = JobQuestionnaire({
+            'tag': 'mytag',
+            'user_fields_json': user_fields_str
+        })
+        user_fields = questionnaire.format_user_fields()
+        self.assertEqual(user_fields, {
+            'intary': [INT_VALUE_PLACEHOLDER], 'myint': INT_VALUE_PLACEHOLDER, 'mystr': STRING_VALUE_PLACEHOLDER
+        })
+
+    def test_create_placeholder_value(self):
+        questionnaire = JobQuestionnaire({
+            'tag': 'mytag',
+            'user_fields_json': '{}'
+        })
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='string', is_array=False),
+            STRING_VALUE_PLACEHOLDER)
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='int', is_array=False),
+            INT_VALUE_PLACEHOLDER)
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='int', is_array=True),
+            [INT_VALUE_PLACEHOLDER])
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='File', is_array=False),
+            {
+                "class": "File",
+                "path": FILE_PLACEHOLDER
+            })
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='File', is_array=True),
+            [{
+                "class": "File",
+                "path": FILE_PLACEHOLDER
+            }])
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='NamedFASTQFilePairType', is_array=False),
+            {
+                "name": STRING_VALUE_PLACEHOLDER,
+                "file1": {
+                    "class": "File",
+                    "path": FILE_PLACEHOLDER
+                },
+                "file2": {
+                    "class": "File",
+                    "path": FILE_PLACEHOLDER
+                }
+            })
+        self.assertEqual(
+            questionnaire.create_placeholder_value(type_name='NamedFASTQFilePairType', is_array=True),
+            [{
+                "name": STRING_VALUE_PLACEHOLDER,
+                "file1": {
+                    "class": "File",
+                    "path": FILE_PLACEHOLDER
+                },
+                "file2": {
+                    "class": "File",
+                    "path": FILE_PLACEHOLDER
+                }
+            }])
+
+
+class JobOrderWalkerTestCase(TestCase):
+    def test_walk(self):
+        walker = JobOrderWalker()
+        walker.on_class_value = Mock()
+        walker.on_simple_value = Mock()
+        walker.walk({
+            'color': 'red',
+            'weight': 123,
+            'file1': {
+                'class': 'File',
+                'path': 'somepath'
+            },
+            'file_ary': [
+                {
+                    'class': 'File',
+                    'path': 'somepath1'
+                }, {
+                    'class': 'File',
+                    'path': 'somepath2'
+                },
+            ],
+            'nested': {
+                'a': [{
+                    'class': 'File',
+                    'path': 'somepath3'
+                }]
+            }
+        })
+
+        walker.on_simple_value.assert_has_calls([
+            call('color', 'red'),
+            call('weight', 123),
+        ])
+        walker.on_class_value.assert_has_calls([
+            call('file1', {'class': 'File', 'path': 'somepath'}),
+            call('file_ary', {'class': 'File', 'path': 'somepath1'}),
+            call('file_ary', {'class': 'File', 'path': 'somepath2'}),
+            call('nested', {'class': 'File', 'path': 'somepath3'}),
+        ])
+
+    def test_format_file_path(self):
+        data = [
+            # input    expected
+            ('https://placeholder.data/stuff/data.txt', 'https://placeholder.data/stuff/data.txt'),
+            ('dds://myproject/rawData/SAAAA_R1_001.fastq.gz', 'dds_myproject_rawData_SAAAA_R1_001.fastq.gz'),
+            ('dds://project/somepath.txt', 'dds_project_somepath.txt'),
+            ('dds://project/dir/somepath.txt', 'dds_project_dir_somepath.txt'),
+        ]
+        for input_val, expected_val in data:
+            self.assertEqual(JobOrderWalker.format_file_path(input_val), expected_val)
+
+
+class JobOrderPlaceholderCheckTestCase(TestCase):
+    def test_walk(self):
+        job_order = {
+            'good_str': 'a',
+            'bad_str': STRING_VALUE_PLACEHOLDER,
+            'good_int': 123,
+            'bad_int': INT_VALUE_PLACEHOLDER,
+            'good_file': {
+                'class': 'File',
+                'path': 'somepath.txt',
+            },
+            'bad_file': {
+                'class': 'File',
+                'path': FILE_PLACEHOLDER,
+            },
+            'good_str_ary': ['a', 'b', 'c'],
+            'bad_str_ary': ['a', STRING_VALUE_PLACEHOLDER, 'c'],
+            'good_file_ary': [{
+                'class': 'File',
+                'path': 'somepath.txt',
+            }],
+            'bad_file_ary': [{
+                'class': 'File',
+                'path': FILE_PLACEHOLDER,
+            }],
+            'good_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': 'somepath.txt',
+                }
+            },
+            'bad_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': FILE_PLACEHOLDER,
+                }
+            },
+        }
+        expected_keys = [
+            'bad_str', 'bad_int', 'bad_file', 'bad_str_ary', 'bad_file_ary', 'bad_file_dict',
+        ]
+
+        checker = JobOrderPlaceholderCheck()
+        checker.walk(job_order)
+
+        self.assertEqual(checker.keys_with_placeholders, set(expected_keys))
+
+
+class JobOrderFormatFilesTestCase(TestCase):
+    def test_walk(self):
+        job_order = {
+            'good_str': 'a',
+            'good_int': 123,
+            'good_file': {
+                'class': 'File',
+                'path': 'dds://project1/data/somepath.txt',
+            },
+            'good_str_ary': ['a', 'b', 'c'],
+            'good_file_ary': [{
+                'class': 'File',
+                'path': 'dds://project2/data/somepath2.txt',
+            }],
+            'good_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': 'dds://project3/data/other/somepath.txt',
+                }
+            },
+        }
+
+        formatter = JobOrderFormatFiles()
+        formatter.walk(job_order)
+
+        self.assertEqual(job_order['good_str'], 'a')
+        self.assertEqual(job_order['good_int'], 123)
+        self.assertEqual(job_order['good_file'],
+                         {'class': 'File', 'path': 'dds_project1_data_somepath.txt'})
+        self.assertEqual(job_order['good_str_ary'], ['a', 'b', 'c'])
+        self.assertEqual(job_order['good_file_ary'],
+                         [{'class': 'File', 'path': 'dds_project2_data_somepath2.txt'}])
+        self.assertEqual(job_order['good_file_dict'],
+                         {'stuff': {'class': 'File', 'path': 'dds_project3_data_other_somepath.txt'}})
+
+
+class JobOrderFileDetailsTestCase(TestCase):
+    @patch('bespin.commands.DDSFileUtil')
+    def test_walk(self, mock_dds_file_util):
+        mock_dds_file_util.return_value.find_file_for_path.return_value = 'ddsfiledata'
+        job_order = {
+            'good_str': 'a',
+            'good_int': 123,
+            'good_file': {
+                'class': 'File',
+                'path': 'dds://project1/data/somepath.txt',
+            },
+            'good_str_ary': ['a', 'b', 'c'],
+            'good_file_ary': [{
+                'class': 'File',
+                'path': 'dds://project2/data/somepath2.txt',
+            }],
+            'good_file_dict': {
+                'stuff': {
+                    'class': 'File',
+                    'path': 'dds://project3/data/other/somepath.txt',
+                }
+            },
+        }
+        expected_dds_file_info = [
+            ('ddsfiledata', 'dds_project1_data_somepath.txt'),
+            ('ddsfiledata', 'dds_project2_data_somepath2.txt'),
+            ('ddsfiledata', 'dds_project3_data_other_somepath.txt')
+        ]
+
+        details = JobOrderFileDetails()
+        details.walk(job_order)
+
+        self.assertEqual(details.dds_files, expected_dds_file_info)
