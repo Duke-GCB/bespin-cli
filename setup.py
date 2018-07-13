@@ -5,7 +5,7 @@ from setuptools import setup
 from setuptools.command.install import install
 
 # bespin-cli version
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 
 
 class VerifyVersionCommand(install):
@@ -22,7 +22,7 @@ class VerifyVersionCommand(install):
             sys.exit(info)
 
 
-setup(name='bespin',
+setup(name='bespin-cli',
       version=VERSION,
       description='Command line tool to run workflows via Bespin.',
       author='John Bradley',

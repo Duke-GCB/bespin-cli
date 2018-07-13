@@ -6,7 +6,7 @@ from bespin.commands import Commands
 from bespin.config import ConfigSetupAbandoned
 from bespin.exceptions import UserInputException
 
-APP_NAME = 'bespin'
+APP_NAME = 'bespin-cli'
 
 
 def main():
