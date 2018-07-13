@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from unittest import TestCase
 from bespin.dukeds import DDSFileUtil, InvalidFilePathException, ProjectDoesNotExistException, \
-    FileDoesNotExistException, ItemNotFound
+    FileDoesNotExistException, ItemNotFound, DUKEDS_FILE_PATH_MISSING_PREFIX, DUKEDS_FILE_PATH_MISSING_SLASH
 from mock import patch, Mock
 
 
@@ -60,3 +60,18 @@ class DDSFileUtilTestCase(TestCase):
         util.give_download_permissions(project_id='123', dds_user_id='456')
         util.client.dds_connection.data_service.set_user_project_permission.assert_called_with(
             '123', '456', auth_role='file_downloader')
+
+    def test_get_project_name_and_file_path(self):
+        project_name, file_path = DDSFileUtil.get_project_name_and_file_path('dds://mouse/somedir/data.txt')
+        self.assertEqual(project_name, 'mouse')
+        self.assertEqual(file_path, 'somedir/data.txt')
+
+    def test_get_project_name_and_file_path_missing_prefix(self):
+        with self.assertRaises(InvalidFilePathException) as raised_exception:
+            DDSFileUtil.get_project_name_and_file_path('mouse/somedir/data.txt')
+        self.assertEqual(str(raised_exception.exception), DUKEDS_FILE_PATH_MISSING_PREFIX + ": mouse/somedir/data.txt")
+
+    def test_get_project_name_and_file_path_missing_file_path(self):
+        with self.assertRaises(InvalidFilePathException) as raised_exception:
+            DDSFileUtil.get_project_name_and_file_path('dds://mouse')
+        self.assertEqual(str(raised_exception.exception), DUKEDS_FILE_PATH_MISSING_SLASH + ": dds://mouse")
