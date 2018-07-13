@@ -4,18 +4,16 @@ import os
 
 PATH_PREFIX = "dds://"
 
+INVALID_DUKEDS_FILE_PATH_MSG = "Invalid DukeDS file path ({})"
+DUKEDS_FILE_PATH_MISSING_PREFIX = INVALID_DUKEDS_FILE_PATH_MSG.format("missing prefix")
+DUKEDS_FILE_PATH_MISSING_SLASH = INVALID_DUKEDS_FILE_PATH_MSG.format("missing / between project and file path")
 
 class DDSFileUtil(object):
     def __init__(self):
         self.client = Client()
 
     def find_file_for_path(self, duke_ds_file_path):
-        if not duke_ds_file_path.startswith(PATH_PREFIX):
-            raise InvalidFilePathException("Invalid DukeDS file path: {}".format(duke_ds_file_path))
-
-        path = duke_ds_file_path.replace(PATH_PREFIX, '', 1)
-        project_name = os.path.dirname(path)
-        file_path = path.replace('{}/'.format(project_name), '', 1)
+        project_name, file_path = self.get_project_name_and_file_path(duke_ds_file_path)
         project = self.find_project_for_name(project_name)
         if project:
             try:
@@ -24,6 +22,18 @@ class DDSFileUtil(object):
                 raise FileDoesNotExistException("File does not exist: {}".format(duke_ds_file_path))
         else:
             raise ProjectDoesNotExistException("Project does not exist: {}".format(duke_ds_file_path))
+
+    @staticmethod
+    def get_project_name_and_file_path(duke_ds_file_path):
+        if not duke_ds_file_path.startswith(PATH_PREFIX):
+            raise InvalidFilePathException("{}: {}".format(DUKEDS_FILE_PATH_MISSING_PREFIX, duke_ds_file_path))
+        path = duke_ds_file_path.replace(PATH_PREFIX, '', 1)
+        path_parts = path.split(os.sep)
+        if len(path_parts) < 2:
+            raise InvalidFilePathException("{}: {}".format(DUKEDS_FILE_PATH_MISSING_SLASH, duke_ds_file_path))
+        project_name = path_parts[0]
+        file_path = path.replace('{}/'.format(project_name), '', 1)
+        return project_name, file_path
 
     def find_project_for_name(self, project_name):
         for project in self.client.get_projects():
