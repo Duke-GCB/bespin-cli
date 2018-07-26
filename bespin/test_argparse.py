@@ -23,6 +23,10 @@ class ArgParserTestCase(TestCase):
         self.target_object.create_job.assert_called()
 
     def test_start_job(self):
+        self.arg_parser.parse_and_run_commands(["jobs", "start", "123"])
+        self.target_object.start_job.assert_called_with(123, None)
+
+    def test_start_job_with_optional_token(self):
         self.arg_parser.parse_and_run_commands(["jobs", "start", "123", "--token", "secret"])
         self.target_object.start_job.assert_called_with(123, "secret")
 

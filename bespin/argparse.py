@@ -62,7 +62,7 @@ class ArgParser(object):
         start_jobs_parser = jobs_subparser.add_parser('start', description='start job')
         start_jobs_parser.set_defaults(func=self._run_start_job)
         start_jobs_parser.add_argument('job_id', type=int)
-        start_jobs_parser.add_argument('--token', type=str, required=True)
+        start_jobs_parser.add_argument('--token', type=str)
 
         cancel_jobs_parser = jobs_subparser.add_parser('cancel', description='cancel job')
         cancel_jobs_parser.set_defaults(func=self._run_cancel_job)
