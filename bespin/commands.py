@@ -62,9 +62,9 @@ class Commands(object):
         """
         Print out a table of current job statuses
         """
-        column_names = ["id", "name", "state", "step", "fund_code", "created", "last_updated"]
         api = self._create_api()
-        print(Table(column_names, api.jobs_list()))
+        jobs_list = JobsList(api)
+        print(Table(jobs_list.column_names, jobs_list.get_column_data()))
 
     def init_job(self, tag, outfile):
         """
@@ -174,6 +174,35 @@ class WorkflowDetails(object):
                 workflow[self.TAG_COLUMN_NAME] = questionnaire['tag']
                 data.append(workflow)
         return data
+
+
+class JobsList(object):
+    """
+    Creates column data based on current users's jobs
+    """
+    def __init__(self, api):
+        self.api = api
+        self.column_names = ["id", "name", "state", "step", "last_updated", "workflow_tag"]
+
+    def get_column_data(self):
+        """
+        Return list of dictionaries of workflow data.
+        :return: [dict]: one record for each questionnaire
+        """
+        data = []
+        for job in self.api.jobs_list():
+            job['workflow_tag'] = self.get_workflow_tag(job['workflow_version'])
+            data.append(job)
+        return data
+
+    def get_workflow_tag(self, workflow_version):
+        """
+        Lookup the workflow tag for the specified workflow version
+        :param workflow_version: int: workflow version id to lookup tag for
+        :return: str: tag associated with workflow_version
+        """
+        questionnaires = self.api.questionnaires_list(workflow_version=workflow_version)
+        return questionnaires[0]['tag']
 
 
 class JobFile(object):
