@@ -611,7 +611,7 @@ class JobOrderFileDetailsTestCase(TestCase):
 class JobsListTestCase(TestCase):
     def test_column_names(self):
         jobs_list = JobsList(api=Mock())
-        self.assertEqual(jobs_list.column_names, ["id", "name", "state", "step", "last_updated", "cpu_hours",
+        self.assertEqual(jobs_list.column_names, ["id", "name", "state", "step", "last_updated", "elapsed_hours",
                                                   "workflow_tag"])
 
     def test_get_workflow_tag(self):
@@ -625,9 +625,9 @@ class JobsListTestCase(TestCase):
     def test_get_cpu_hours(self):
         mock_api = Mock()
         jobs_list = JobsList(api=mock_api)
-        cpu_hours = jobs_list.get_elapsed_hours({'elapsed_hours': 1.25})
+        cpu_hours = jobs_list.get_elapsed_hours({'vm_hours': 1.25})
         self.assertEqual(cpu_hours, 1.3)
-        cpu_hours = jobs_list.get_elapsed_hours({'elapsed_hours': 0.0})
+        cpu_hours = jobs_list.get_elapsed_hours({'vm_hours': 0.0})
         self.assertEqual(cpu_hours, 0.0)
 
     def test_get_column_data(self):
