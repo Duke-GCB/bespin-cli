@@ -7,7 +7,7 @@ from tabulate import tabulate
 import yaml
 import json
 import sys
-import math
+from decimal import Decimal, ROUND_HALF_UP
 
 STRING_VALUE_PLACEHOLDER = "<String Value>"
 INT_VALUE_PLACEHOLDER = "<Integer Value>"
@@ -208,9 +208,10 @@ class JobsList(object):
 
     def get_elapsed_hours(self, usage):
         if usage:
-            elapsed_hours = usage.get('vm_hours')
-            # round elapsed to 1 decimal place
-            return math.ceil(elapsed_hours * 10.0) / 10.0
+            elapsed_hours = Decimal(usage.get('vm_hours'))
+            # round to 1 decimal placec
+            rounded_elapsed_hours = Decimal(elapsed_hours.quantize(Decimal('.1'), rounding=ROUND_HALF_UP))
+            return float(rounded_elapsed_hours)
         return None
 
 
