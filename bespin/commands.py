@@ -192,7 +192,7 @@ class JobsList(object):
         """
         data = []
         for job in self.api.jobs_list():
-            job['elapsed_hours'] = self.get_elapsed_hours(job.get('summary'))
+            job['elapsed_hours'] = self.get_elapsed_hours(job.get('usage'))
             job['workflow_tag'] = self.get_workflow_tag(job['workflow_version'])
             data.append(job)
         return data
@@ -206,9 +206,9 @@ class JobsList(object):
         questionnaires = self.api.questionnaires_list(workflow_version=workflow_version)
         return questionnaires[0]['tag']
 
-    def get_elapsed_hours(self, job_summary):
-        if job_summary:
-            elapsed_hours = job_summary.get('vm_hours')
+    def get_elapsed_hours(self, usage):
+        if usage:
+            elapsed_hours = usage.get('vm_hours')
             # round elapsed to 1 decimal place
             return math.ceil(elapsed_hours * 10.0) / 10.0
         return None
