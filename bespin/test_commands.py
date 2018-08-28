@@ -625,9 +625,9 @@ class JobsListTestCase(TestCase):
     def test_get_cpu_hours(self):
         mock_api = Mock()
         jobs_list = JobsList(api=mock_api)
-        cpu_hours = jobs_list.get_cpu_hours({'cpu_hours': 1.25})
+        cpu_hours = jobs_list.get_elapsed_hours({'elapsed_hours': 1.25})
         self.assertEqual(cpu_hours, 1.3)
-        cpu_hours = jobs_list.get_cpu_hours({'cpu_hours': 0.0})
+        cpu_hours = jobs_list.get_elapsed_hours({'elapsed_hours': 0.0})
         self.assertEqual(cpu_hours, 0.0)
 
     def test_get_column_data(self):
@@ -636,13 +636,13 @@ class JobsListTestCase(TestCase):
         jobs_list = JobsList(api=mock_api)
         jobs_list.get_workflow_tag = Mock()
         jobs_list.get_workflow_tag.return_value = 'sometag/v1/human'
-        jobs_list.get_cpu_hours = Mock()
-        jobs_list.get_cpu_hours.return_value = 1.2
+        jobs_list.get_elapsed_hours = Mock()
+        jobs_list.get_elapsed_hours.return_value = 1.2
 
         column_data = jobs_list.get_column_data()
         self.assertEqual(len(column_data), 1)
         self.assertEqual(column_data[0]['id'], 123)
         self.assertEqual(column_data[0]['workflow_tag'], 'sometag/v1/human')
-        self.assertEqual(column_data[0]['cpu_hours'], 1.2)
+        self.assertEqual(column_data[0]['elapsed_hours'], 1.2)
         jobs_list.get_workflow_tag.assert_called_with(456)
-        jobs_list.get_cpu_hours.assert_called_with(mock_api.jobs_list.return_value[0]['summary'])
+        jobs_list.get_elapsed_hours.assert_called_with(mock_api.jobs_list.return_value[0]['summary'])

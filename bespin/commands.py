@@ -183,7 +183,7 @@ class JobsList(object):
     """
     def __init__(self, api):
         self.api = api
-        self.column_names = ["id", "name", "state", "step", "last_updated", "cpu_hours", "workflow_tag"]
+        self.column_names = ["id", "name", "state", "step", "last_updated", "elapsed_hours", "workflow_tag"]
 
     def get_column_data(self):
         """
@@ -192,7 +192,7 @@ class JobsList(object):
         """
         data = []
         for job in self.api.jobs_list():
-            job['cpu_hours'] = self.get_cpu_hours(job.get('summary'))
+            job['elapsed_hours'] = self.get_elapsed_hours(job.get('summary'))
             job['workflow_tag'] = self.get_workflow_tag(job['workflow_version'])
             data.append(job)
         return data
@@ -206,12 +206,13 @@ class JobsList(object):
         questionnaires = self.api.questionnaires_list(workflow_version=workflow_version)
         return questionnaires[0]['tag']
 
-    def get_cpu_hours(self, job_summary):
+    def get_elapsed_hours(self, job_summary):
         if job_summary:
-            cpu_hours = job_summary.get('cpu_hours')
-            # round cpu_hours to 1 decimal place
-            return math.ceil(cpu_hours * 10.0) / 10.0
+            elapsed_hours = job_summary.get('vm_hours')
+            # round elapsed to 1 decimal place
+            return math.ceil(elapsed_hours * 10.0) / 10.0
         return None
+
 
 class JobFile(object):
     """
