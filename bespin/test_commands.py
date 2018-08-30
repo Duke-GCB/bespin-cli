@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from unittest import TestCase
 from bespin.commands import Commands, Table, WorkflowDetails, JobFile, JobFileLoader, JobQuestionnaire, \
     STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, FILE_PLACEHOLDER, IncompleteJobFileException, \
-    JobOrderWalker, JobOrderPlaceholderCheck, JobOrderFormatFiles, JobOrderFileDetails
+    JobOrderWalker, JobOrderPlaceholderCheck, JobOrderFormatFiles, JobOrderFileDetails, JobsList
 from mock import patch, call, Mock
 import yaml
 import json
@@ -28,14 +28,15 @@ class CommandsTestCase(TestCase):
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.JobsList')
     @patch('bespin.commands.Table')
     @patch('bespin.commands.print')
-    def test_jobs_list(self, mock_print, mock_table, mock_bespin_api, mock_config_file):
+    def test_jobs_list(self, mock_print, mock_table, mock_jobs_list, mock_bespin_api, mock_config_file):
         commands = Commands(self.version_str, self.user_agent_str)
         commands.jobs_list()
-
-        mock_table.assert_called_with(["id", "name", "state", "step", "fund_code", "created", "last_updated"],
-                                      mock_bespin_api.return_value.jobs_list.return_value)
+        mock_jobs_list.assert_called_with(mock_bespin_api.return_value)
+        mock_table.assert_called_with(mock_jobs_list.return_value.column_names,
+                                      mock_jobs_list.return_value.get_column_data.return_value)
         mock_print.assert_called_with(mock_table.return_value)
 
     @patch('bespin.commands.ConfigFile')
@@ -605,3 +606,43 @@ class JobOrderFileDetailsTestCase(TestCase):
         details.walk(job_order)
 
         self.assertEqual(details.dds_files, expected_dds_file_info)
+
+
+class JobsListTestCase(TestCase):
+    def test_column_names(self):
+        jobs_list = JobsList(api=Mock())
+        self.assertEqual(jobs_list.column_names, ["id", "name", "state", "step", "last_updated", "elapsed_hours",
+                                                  "workflow_tag"])
+
+    def test_get_workflow_tag(self):
+        mock_api = Mock()
+        mock_api.questionnaires_list.return_value = [{'tag': 'sometag/v1/human'}]
+        jobs_list = JobsList(api=mock_api)
+        workflow_tag = jobs_list.get_workflow_tag(workflow_version=123)
+        self.assertEqual(workflow_tag, 'sometag/v1/human')
+        mock_api.questionnaires_list.assert_called_with(workflow_version=123)
+
+    def test_get_elapsed_hours(self):
+        mock_api = Mock()
+        jobs_list = JobsList(api=mock_api)
+        cpu_hours = jobs_list.get_elapsed_hours({'vm_hours': 1.25})
+        self.assertEqual(cpu_hours, 1.3)
+        cpu_hours = jobs_list.get_elapsed_hours({'vm_hours': 0.0})
+        self.assertEqual(cpu_hours, 0.0)
+
+    def test_get_column_data(self):
+        mock_api = Mock()
+        mock_api.jobs_list.return_value = [{'id': 123, 'workflow_version': 456, 'usage': {'cpu_hours': 1.2}}]
+        jobs_list = JobsList(api=mock_api)
+        jobs_list.get_workflow_tag = Mock()
+        jobs_list.get_workflow_tag.return_value = 'sometag/v1/human'
+        jobs_list.get_elapsed_hours = Mock()
+        jobs_list.get_elapsed_hours.return_value = 1.2
+
+        column_data = jobs_list.get_column_data()
+        self.assertEqual(len(column_data), 1)
+        self.assertEqual(column_data[0]['id'], 123)
+        self.assertEqual(column_data[0]['workflow_tag'], 'sometag/v1/human')
+        self.assertEqual(column_data[0]['elapsed_hours'], 1.2)
+        jobs_list.get_workflow_tag.assert_called_with(456)
+        jobs_list.get_elapsed_hours.assert_called_with(mock_api.jobs_list.return_value[0]['usage'])
