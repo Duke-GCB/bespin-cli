@@ -30,9 +30,19 @@ USER_PLACEHOLDER_DICT = {
             "class": "File",
             "path": FILE_PLACEHOLDER
         }
+    },
+    'FASTQReadPairType': {
+        "name": STRING_VALUE_PLACEHOLDER,
+        "read1_files": [{
+            "class": "File",
+            "path": FILE_PLACEHOLDER
+        }],
+        "read2_files": [{
+            "class": "File",
+            "path": FILE_PLACEHOLDER
+        }]
     }
 }
-
 
 class Commands(object):
     """
