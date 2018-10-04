@@ -180,10 +180,11 @@ class WorkflowDetails(object):
         """
         data = []
         for workflow in self.api.workflows_list():
-            latest_version = workflow['versions'][-1]
-            for questionnaire in self.api.questionnaires_list(workflow_version=latest_version):
-                workflow[self.TAG_COLUMN_NAME] = questionnaire['tag']
-                data.append(workflow)
+            if len(workflow['versions']):
+                latest_version = workflow['versions'][-1]
+                for questionnaire in self.api.questionnaires_list(workflow_version=latest_version):
+                    workflow[self.TAG_COLUMN_NAME] = questionnaire['tag']
+                    data.append(workflow)
         return data
 
 
