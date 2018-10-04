@@ -1,7 +1,7 @@
 from __future__ import print_function
 import sys
 import pkg_resources
-from bespin.argparse import ArgParser
+from bespin.argparser import ArgParser
 from bespin.commands import Commands
 from bespin.config import ConfigSetupAbandoned
 from bespin.exceptions import UserInputException

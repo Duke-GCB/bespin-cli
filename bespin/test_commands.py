@@ -166,6 +166,16 @@ class WorkflowDetailsTestCase(TestCase):
         self.assertEqual(column_data, expected_data)
         mock_api.questionnaires_list.assert_called_with(workflow_version=2)
 
+    def test_ignores_workflows_without_versions(self):
+        mock_api = Mock()
+        mock_api.workflows_list.return_value = [
+            {'id': 1, 'name': 'no-versions', 'versions': []},
+        ]
+        details = WorkflowDetails(mock_api)
+        column_data = details.get_column_data()
+        self.assertEqual(len(column_data), 0)
+        mock_api.questionnaires_list.assert_not_called()
+
 
 class JobFileTestCase(TestCase):
     def test_yaml_str(self):
