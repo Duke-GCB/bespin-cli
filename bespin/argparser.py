@@ -40,6 +40,8 @@ class ArgParser(object):
         jobs_subparser = jobs_parser.add_subparsers()
 
         list_jobs_parser = jobs_subparser.add_parser('list', description='list workflows')
+        list_jobs_parser.add_argument('-a', '--all', action='store_true',
+                                      help='show all workflow versions instead of just the most recent.')
         list_jobs_parser.set_defaults(func=self._run_list_workflows)
 
     def _create_job_parser(self, subparsers):
@@ -79,8 +81,8 @@ class ArgParser(object):
     def _run_list_jobs(self, _):
         self.target_object.jobs_list()
 
-    def _run_list_workflows(self, _):
-        self.target_object.workflows_list()
+    def _run_list_workflows(self, args):
+        self.target_object.workflows_list(all_versions=args.all)
 
     def _run_init_job(self, args):
         self.target_object.init_job(args.tag, args.outfile)

@@ -18,13 +18,30 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.WorkflowDetails')
     @patch('bespin.commands.Table')
     @patch('bespin.commands.print')
-    def test_workflows_list(self, mock_print, mock_table, mock_workflow_details, mock_bespin_api, mock_config_file):
+    def test_workflows_list_latest_versions(self, mock_print, mock_table, mock_workflow_details, mock_bespin_api,
+                                            mock_config_file):
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflows_list()
+        commands.workflows_list(all_versions=False)
         workflow_details = mock_workflow_details.return_value
         mock_table.assert_called_with(workflow_details.column_names,
                                       workflow_details.get_column_data.return_value)
         mock_print.assert_called_with(mock_table.return_value)
+        mock_workflow_details.assert_called_with(mock_bespin_api.return_value, False)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.WorkflowDetails')
+    @patch('bespin.commands.Table')
+    @patch('bespin.commands.print')
+    def test_workflows_list_all_versions(self, mock_print, mock_table, mock_workflow_details, mock_bespin_api,
+                                         mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.workflows_list(all_versions=True)
+        workflow_details = mock_workflow_details.return_value
+        mock_table.assert_called_with(workflow_details.column_names,
+                                      workflow_details.get_column_data.return_value)
+        mock_print.assert_called_with(mock_table.return_value)
+        mock_workflow_details.assert_called_with(mock_bespin_api.return_value, True)
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
@@ -156,9 +173,9 @@ class WorkflowDetailsTestCase(TestCase):
         mock_api.questionnaires_list.return_value = [
             {'tag': 'exome/v2/human'}
         ]
-        details = WorkflowDetails(mock_api)
+        details = WorkflowDetails(mock_api, all_versions=False)
         expected_data = [{'id': 1,
-                          'latest version tag': 'exome/v2/human',
+                          'version tag': 'exome/v2/human',
                           'name': 'exome',
                           'versions': [1, 2]}]
         column_data = details.get_column_data()
@@ -166,12 +183,50 @@ class WorkflowDetailsTestCase(TestCase):
         self.assertEqual(column_data, expected_data)
         mock_api.questionnaires_list.assert_called_with(workflow_version=2)
 
-    def test_ignores_workflows_without_versions(self):
+        mock_api.questionnaires_list.reset_mock()
+        mock_api.questionnaires_list.side_effect = [
+            [{'tag': 'exome/v1/human'}],
+            [{'tag': 'exome/v2/human'}]
+        ]
+        details = WorkflowDetails(mock_api, all_versions=True)
+        expected_data = [
+            {
+                'id': 1,
+                'version tag': 'exome/v1/human',
+                'name': 'exome',
+                'versions': [1, 2]
+            },
+            {
+                'id': 1,
+                'version tag': 'exome/v2/human',
+                'name': 'exome',
+                'versions': [1, 2]
+            },
+        ]
+        column_data = details.get_column_data()
+        self.assertEqual(len(column_data), 2)
+        self.assertEqual(column_data, expected_data)
+        mock_api.questionnaires_list.assert_has_calls([
+            call(workflow_version=1),
+            call(workflow_version=2),
+        ])
+
+    def test_ignores_workflows_without_versions_when_latest(self):
         mock_api = Mock()
         mock_api.workflows_list.return_value = [
             {'id': 1, 'name': 'no-versions', 'versions': []},
         ]
-        details = WorkflowDetails(mock_api)
+        details = WorkflowDetails(mock_api, all_versions=False)
+        column_data = details.get_column_data()
+        self.assertEqual(len(column_data), 0)
+        mock_api.questionnaires_list.assert_not_called()
+
+    def test_ignores_workflows_without_versions_when_all(self):
+        mock_api = Mock()
+        mock_api.workflows_list.return_value = [
+            {'id': 1, 'name': 'no-versions', 'versions': []},
+        ]
+        details = WorkflowDetails(mock_api, all_versions=True)
         column_data = details.get_column_data()
         self.assertEqual(len(column_data), 0)
         mock_api.questionnaires_list.assert_not_called()

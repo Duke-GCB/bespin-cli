@@ -44,6 +44,7 @@ USER_PLACEHOLDER_DICT = {
     }
 }
 
+
 class Commands(object):
     """
     Commands run based on command line input.
@@ -61,12 +62,13 @@ class Commands(object):
         config = ConfigFile().read_or_create_config()
         return BespinApi(config, user_agent_str=self.user_agent_str)
 
-    def workflows_list(self):
+    def workflows_list(self, all_versions):
         """
         Print out a table of workflows/questionnaires
+        :param all_versions: bool: when true show all versions otherwise show most recent
         """
         api = self._create_api()
-        workflow_data = WorkflowDetails(api)
+        workflow_data = WorkflowDetails(api, all_versions)
         print(Table(workflow_data.column_names, workflow_data.get_column_data()))
 
     def jobs_list(self):
@@ -167,10 +169,11 @@ class WorkflowDetails(object):
     """
     Creates column data based on workflows/questionnaires
     """
-    TAG_COLUMN_NAME = "latest version tag"
+    TAG_COLUMN_NAME = "version tag"
 
-    def __init__(self, api):
+    def __init__(self, api, all_versions):
         self.api = api
+        self.all_versions = all_versions
         self.column_names = ["id", "name", self.TAG_COLUMN_NAME]
 
     def get_column_data(self):
@@ -181,10 +184,13 @@ class WorkflowDetails(object):
         data = []
         for workflow in self.api.workflows_list():
             if len(workflow['versions']):
-                latest_version = workflow['versions'][-1]
-                for questionnaire in self.api.questionnaires_list(workflow_version=latest_version):
-                    workflow[self.TAG_COLUMN_NAME] = questionnaire['tag']
-                    data.append(workflow)
+                versions = workflow['versions']
+                if not self.all_versions:
+                    versions = versions[-1:]
+                for version in versions:
+                    for questionnaire in self.api.questionnaires_list(workflow_version=version):
+                        workflow[self.TAG_COLUMN_NAME] = questionnaire['tag']
+                        data.append(dict(workflow))
         return data
 
 
