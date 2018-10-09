@@ -10,9 +10,17 @@ class ArgParserTestCase(TestCase):
         self.target_object = Mock()
         self.arg_parser = ArgParser(version_str='1.0', target_object=self.target_object)
 
-    def test_workflows_list(self):
+    def test_workflows_list_current_versions(self):
         self.arg_parser.parse_and_run_commands(["workflows", "list"])
-        self.target_object.workflows_list.assert_called()
+        self.target_object.workflows_list.assert_called_with(all_versions=False)
+
+    def test_workflows_list_all_versions(self):
+        self.arg_parser.parse_and_run_commands(["workflows", "list", "--all"])
+        self.target_object.workflows_list.assert_called_with(all_versions=True)
+
+    def test_workflows_list_all_versions_short_flag(self):
+        self.arg_parser.parse_and_run_commands(["workflows", "list", "-a"])
+        self.target_object.workflows_list.assert_called_with(all_versions=True)
 
     def test_init_job(self):
         self.arg_parser.parse_and_run_commands(["jobs", "init", "--tag", "exome/v1/human"])
