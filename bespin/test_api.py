@@ -145,7 +145,8 @@ class BespinApiTestCase(TestCase):
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
         dds_input_file = api.dds_job_input_files_post(project_id='123', file_id='456', destination_path='data.txt',
                                                       sequence_group=1, sequence=2,
-                                                      dds_user_credentials=4, stage_group_id=5)
+                                                      dds_user_credentials=4, stage_group_id=5,
+                                                      size=1000)
 
         self.assertEqual(dds_input_file, 'dds-job-input-file1')
         expected_json = {
@@ -155,7 +156,8 @@ class BespinApiTestCase(TestCase):
             'sequence_group': 1,
             'sequence': 2,
             'dds_user_credentials': 4,
-            'stage_group': 5
+            'stage_group': 5,
+            'size': 1000,
         }
         mock_requests.post.assert_called_with('someurl/dds-job-input-files/', headers=self.expected_headers,
                                               json=expected_json)

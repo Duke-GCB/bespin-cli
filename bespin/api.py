@@ -103,7 +103,7 @@ class BespinApi(object):
         return self._post_request('/job-file-stage-groups/', {})
 
     def dds_job_input_files_post(self, project_id, file_id, destination_path, sequence_group, sequence,
-                                 dds_user_credentials, stage_group_id):
+                                 dds_user_credentials, stage_group_id, size):
         data = {
             "project_id": project_id,
             "file_id": file_id,
@@ -111,7 +111,8 @@ class BespinApi(object):
             "sequence_group": sequence_group,
             "sequence": sequence,
             "dds_user_credentials": dds_user_credentials,
-            "stage_group": stage_group_id
+            "stage_group": stage_group_id,
+            "size": size,
         }
         return self._post_request('/dds-job-input-files/', data)
 

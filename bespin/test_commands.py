@@ -336,14 +336,15 @@ class JobFileTestCase(TestCase):
             'myint': 555
         })
         job_file.get_dds_files_details = Mock()
-        mock_file = Mock(project_id=666)
+        mock_file = Mock(project_id=666, current_version={'upload': {'size': 4002}})
         mock_file.id = 777
         job_file.get_dds_files_details.return_value = [[mock_file, 'somepath']]
 
         job_file.create_job(mock_api)
 
         mock_api.questionnaires_list.assert_called_with(tag='sometag')
-        mock_api.dds_job_input_files_post.assert_called_with(666, 777, 'somepath', 0, 0, 111, stage_group_id=333)
+        mock_api.dds_job_input_files_post.assert_called_with(666, 777, 'somepath', 0, 0, 111, stage_group_id=333,
+                                                             size=4002)
         json_payload = '{"myfile": {"class": "File", "path": "dds_project_somepath.txt"}, "myint": 555}'
         mock_api.job_answer_set_post.assert_called_with('myjob', '001', json_payload, 222, 333)
         mock_api.job_answer_set_create_job.assert_called_with(444)
