@@ -288,8 +288,10 @@ class JobFile(object):
         dds_project_ids = set()
         sequence = 0
         for dds_file, path in self.get_dds_files_details():
+            file_size = dds_file.current_version['upload']['size']
             api.dds_job_input_files_post(dds_file.project_id, dds_file.id, path, 0, sequence,
-                                         dds_user_credential['id'], stage_group_id=stage_group['id'])
+                                         dds_user_credential['id'], stage_group_id=stage_group['id'],
+                                         size=file_size)
             sequence += 1
             dds_project_ids.add(dds_file.project_id)
         user_job_order_json = self.create_user_job_order_json()

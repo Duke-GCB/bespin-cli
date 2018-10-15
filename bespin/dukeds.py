@@ -8,6 +8,7 @@ INVALID_DUKEDS_FILE_PATH_MSG = "Invalid DukeDS file path ({})"
 DUKEDS_FILE_PATH_MISSING_PREFIX = INVALID_DUKEDS_FILE_PATH_MSG.format("missing prefix")
 DUKEDS_FILE_PATH_MISSING_SLASH = INVALID_DUKEDS_FILE_PATH_MSG.format("missing / between project and file path")
 
+
 class DDSFileUtil(object):
     def __init__(self):
         self.client = Client()
