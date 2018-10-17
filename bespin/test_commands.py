@@ -529,7 +529,15 @@ class JobOrderWalkerTestCase(TestCase):
                     'class': 'File',
                     'path': 'somepath3'
                 }]
-            }
+            },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
+            },
         })
 
         walker.on_simple_value.assert_has_calls([
@@ -592,6 +600,14 @@ class JobOrderPlaceholderCheckTestCase(TestCase):
                     'path': FILE_PLACEHOLDER,
                 }
             },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
+            },
         }
         expected_keys = [
             'bad_str', 'bad_int', 'bad_file', 'bad_str_ary', 'bad_file_ary', 'bad_file_dict',
@@ -622,6 +638,14 @@ class JobOrderFormatFilesTestCase(TestCase):
                     'class': 'File',
                     'path': 'dds://project3/data/other/somepath.txt',
                 }
+            },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
             },
         }
 
@@ -660,6 +684,14 @@ class JobOrderFileDetailsTestCase(TestCase):
                     'class': 'File',
                     'path': 'dds://project3/data/other/somepath.txt',
                 }
+            },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
             },
         }
         expected_dds_file_info = [
