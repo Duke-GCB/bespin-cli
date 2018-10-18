@@ -3,6 +3,7 @@ from bespin.config import ConfigFile
 from bespin.api import BespinApi
 from bespin.exceptions import IncompleteJobFileException
 from bespin.dukeds import DDSFileUtil
+from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
 from tabulate import tabulate
 import yaml
 import json
@@ -411,8 +412,8 @@ class JobOrderWalker(object):
         :param path: str: format dds://<projectname>/<filepath>
         :return: str: file path to be used for staging data when running the workflow
         """
-        if path.startswith("dds://"):
-            return path.replace("dds://", "dds_").replace("/", "_").replace(":", "_")
+        if path.startswith(DUKEDS_PATH_PREFIX):
+            return path.replace(DUKEDS_PATH_PREFIX, "dds_").replace("/", "_").replace(":", "_")
         return path
 
 
@@ -421,8 +422,10 @@ class JobOrderPlaceholderCheck(JobOrderWalker):
         self.keys_with_placeholders = set()
 
     def on_class_value(self, top_level_key, value):
-        if value['class'] == 'File' and value['path'] in USER_PLACEHOLDER_VALUES:
-            self.keys_with_placeholders.add(top_level_key)
+        if value['class'] == 'File':
+            path = value.get('path')
+            if path and path in USER_PLACEHOLDER_VALUES:
+                self.keys_with_placeholders.add(top_level_key)
 
     def on_simple_value(self, top_level_key, value):
         if value in USER_PLACEHOLDER_VALUES:
@@ -432,7 +435,9 @@ class JobOrderPlaceholderCheck(JobOrderWalker):
 class JobOrderFormatFiles(JobOrderWalker):
     def on_class_value(self, top_level_key, value):
         if value['class'] == 'File':
-            value['path'] = self.format_file_path(value['path'])
+            path = value.get('path')
+            if path:
+                value['path'] = self.format_file_path(path)
 
 
 class JobOrderFileDetails(JobOrderWalker):
@@ -442,6 +447,7 @@ class JobOrderFileDetails(JobOrderWalker):
 
     def on_class_value(self, top_level_key, value):
         if value['class'] == 'File':
-            path = value['path']
-            dds_file = self.dds_file_util.find_file_for_path(path)
-            self.dds_files.append((dds_file, self.format_file_path(path)))
+            path = value.get('path')
+            if path and path.startswith(DUKEDS_PATH_PREFIX):
+                dds_file = self.dds_file_util.find_file_for_path(path)
+                self.dds_files.append((dds_file, self.format_file_path(path)))

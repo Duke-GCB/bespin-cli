@@ -250,6 +250,14 @@ class JobFileTestCase(TestCase):
                 'class': 'File',
                 'path': 'dds://project/somepath.txt'
             },
+            'my_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'my_url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
+            },
             'myint': 123,
             'myfileary': [
                 {
@@ -298,6 +306,14 @@ class JobFileTestCase(TestCase):
                  'path': 'dds_myproject_rawData_SAAAA_R2_001.fastq.gz'
              },
              'name': 'Sample1'}])
+        self.assertEqual(user_job_order['my_path_file'], {
+            'class': 'File',
+            'path': '/tmp/data.txt'
+        }, "Plain file paths should not be modified.")
+        self.assertEqual(user_job_order['my_url_file'], {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
+        }, "URL file paths should not be modified.")
 
     @patch('bespin.commands.DDSFileUtil')
     def test_get_dds_files_details(self, mock_dds_file_util):
@@ -529,7 +545,15 @@ class JobOrderWalkerTestCase(TestCase):
                     'class': 'File',
                     'path': 'somepath3'
                 }]
-            }
+            },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
+            },
         })
 
         walker.on_simple_value.assert_has_calls([
@@ -592,6 +616,14 @@ class JobOrderPlaceholderCheckTestCase(TestCase):
                     'path': FILE_PLACEHOLDER,
                 }
             },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
+            },
         }
         expected_keys = [
             'bad_str', 'bad_int', 'bad_file', 'bad_str_ary', 'bad_file_ary', 'bad_file_dict',
@@ -622,6 +654,14 @@ class JobOrderFormatFilesTestCase(TestCase):
                     'class': 'File',
                     'path': 'dds://project3/data/other/somepath.txt',
                 }
+            },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
             },
         }
 
@@ -660,6 +700,14 @@ class JobOrderFileDetailsTestCase(TestCase):
                     'class': 'File',
                     'path': 'dds://project3/data/other/somepath.txt',
                 }
+            },
+            'plain_path_file': {
+                'class': 'File',
+                'path': '/tmp/data.txt'
+            },
+            'url_file': {
+                'class': 'File',
+                'location': 'https://github.com/datafile1.dat'
             },
         }
         expected_dds_file_info = [
