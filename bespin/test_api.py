@@ -200,3 +200,49 @@ class BespinApiTestCase(TestCase):
 
         self.assertEqual(items, ['agentcred1'])
         mock_requests.get.assert_called_with('someurl/dds-user-credentials/', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_workflow_configurations_list_no_filtering(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['workflowconfig1']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        items = api.workflow_configurations_list()
+        mock_requests.get.assert_called_with('someurl/workflow-configurations/', headers=self.expected_headers)
+        self.assertEqual(items, ['workflowconfig1'])
+
+    @patch('bespin.api.requests')
+    def test_workflow_configurations_list_with_filtering(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['workflowconfig1']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        items = api.workflow_configurations_list(workflow_version=12, tag='mytag')
+        mock_requests.get.assert_called_with('someurl/workflow-configurations/?workflow_version=12&tag=mytag',
+                                             headers=self.expected_headers)
+        self.assertEqual(items, ['workflowconfig1'])
+
+    @patch('bespin.api.requests')
+    def test_workflow_configurations_create_job(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['workflowconfig1']
+        mock_requests.get.return_value = mock_response
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        item = api.workflow_configurations_create_job(
+            workflow_configuration_id=1,
+            job_name='myjob',
+            fund_code='001',
+            stage_group=1,
+            user_job_order={'threads': 12},
+            job_vm_strategy=2)
+        expected_json = {
+            'job_name': 'myjob',
+            'fund_code': '001',
+            'stage_group': 1,
+            'user_job_order': {'threads': 12},
+            'job_vm_strategy': 2}
+        mock_requests.post.assert_called_with('someurl/workflow-configurations/1/create-job/',
+                                              headers=self.expected_headers,
+                                              json=expected_json)
