@@ -84,8 +84,8 @@ class BespinApi(object):
     def workflow_version_get(self, workflow_version):
         return self._get_request('/workflow-versions/{}/'.format(workflow_version))
 
-    def questionnaires_list(self, workflow_version=None, tag=None):
-        url = '/job-questionnaires/'
+    def workflow_configurations_list(self, workflow_version=None, tag=None):
+        url = '/workflow-configurations/'
         if workflow_version or tag:
             url += "?"
             if workflow_version:
@@ -96,8 +96,16 @@ class BespinApi(object):
                 url += "tag={}".format(tag)
         return self._get_request(url)
 
-    def questionnaire_get(self, questionnaire_id):
-        return self._get_request('/job-questionnaires/{}/'.format(questionnaire_id))
+    def workflow_configurations_create_job(self, workflow_configuration_id, job_name, fund_code, stage_group,
+                                           user_job_order, job_vm_strategy=None):
+        data = {
+            'job_name': job_name,
+            'fund_code': fund_code,
+            'stage_group': stage_group,
+            'user_job_order': user_job_order,
+            'job_vm_strategy': job_vm_strategy
+        }
+        return self._post_request('/workflow-configurations/{}/create-job/'.format(workflow_configuration_id), data)
 
     def stage_group_post(self):
         return self._post_request('/job-file-stage-groups/', {})
@@ -115,19 +123,6 @@ class BespinApi(object):
             "size": size,
         }
         return self._post_request('/dds-job-input-files/', data)
-
-    def job_answer_set_post(self, job_name, fund_code, user_job_order_json, questionnaire_id, stage_group_id):
-        data = {
-            "job_name": job_name,
-            "fund_code": fund_code,
-            "user_job_order_json": user_job_order_json,
-            "questionnaire": questionnaire_id,
-            "stage_group": stage_group_id
-        }
-        return self._post_request('/job-answer-sets/', data)
-
-    def job_answer_set_create_job(self, job_answer_set_id):
-        return self._post_request('/job-answer-sets/{}/create-job/'.format(job_answer_set_id), {})
 
     def authorize_job(self, job_id, token):
         return self._post_request('/jobs/{}/authorize/'.format(job_id), {'token': token})
