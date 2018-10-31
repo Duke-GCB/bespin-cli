@@ -103,9 +103,6 @@ class ArgParser(object):
     def _run_show_workflow_configuration(self, args):
         self.target_object.workflow_configurations_show(args.tag, args.outfile)
 
-    def _run_create_workflow_configuration(self, args):
-        self.target_object.create_workflow_configuration(args.infile)
-
     def _run_init_job(self, args):
         self.target_object.init_job(args.tag, args.outfile)
 

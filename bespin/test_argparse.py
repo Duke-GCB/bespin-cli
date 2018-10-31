@@ -22,6 +22,14 @@ class ArgParserTestCase(TestCase):
         self.arg_parser.parse_and_run_commands(["workflows", "list", "-a"])
         self.target_object.workflows_list.assert_called_with(all_versions=True)
 
+    def test_workflow_configurations_list(self):
+        self.arg_parser.parse_and_run_commands(["workflowconfigurations", "list"])
+        self.target_object.workflow_configurations_list.assert_called_with()
+
+    def test_workflow_configurations_show(self):
+        self.arg_parser.parse_and_run_commands(["workflowconfigurations", "show", "--tag", "exome/v1/human"])
+        self.target_object.workflow_configurations_show.assert_called_with("exome/v1/human", sys.stdout)
+
     def test_init_job(self):
         self.arg_parser.parse_and_run_commands(["jobs", "init", "--tag", "exome/v1/human"])
         self.target_object.init_job.assert_called_with("exome/v1/human", sys.stdout)
