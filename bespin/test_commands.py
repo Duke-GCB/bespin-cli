@@ -2,8 +2,7 @@ from __future__ import absolute_import
 from unittest import TestCase
 from bespin.commands import Commands, Table, WorkflowDetails, JobFile, JobFileLoader, JobConfiguration, \
     STRING_VALUE_PLACEHOLDER, INT_VALUE_PLACEHOLDER, FILE_PLACEHOLDER, IncompleteJobFileException, \
-    JobOrderWalker, JobOrderPlaceholderCheck, JobOrderFormatFiles, JobOrderFileDetails, JobsList, \
-    WorkflowConfigurationDetails
+    JobOrderWalker, JobOrderPlaceholderCheck, JobOrderFormatFiles, JobOrderFileDetails, JobsList
 from mock import patch, call, Mock
 import yaml
 import json
@@ -156,20 +155,13 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.print')
-    def test_workflow_configurations_list(self, mock_print, mock_bespin_api, mock_config_file):
-        commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflow_configurations_list()
-
-    @patch('bespin.commands.ConfigFile')
-    @patch('bespin.commands.BespinApi')
-    @patch('bespin.commands.print')
-    def test_workflow_configurations_show(self, mock_print, mock_bespin_api, mock_config_file):
+    def test_workflow_configuration_show(self, mock_print, mock_bespin_api, mock_config_file):
         mock_outfile = Mock()
         mock_bespin_api.return_value.workflow_configurations_list.return_value = [
             {}
         ]
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflow_configurations_show(tag='mytag', outfile=mock_outfile)
+        commands.workflow_configuration_show(tag='mytag', outfile=mock_outfile)
         mock_outfile.write.assert_called_with('{}\n')
 
 
@@ -774,14 +766,3 @@ class JobsListTestCase(TestCase):
         self.assertEqual(column_data[0]['elapsed_hours'], 1.2)
         jobs_list.get_workflow_tag.assert_called_with(456)
         jobs_list.get_elapsed_hours.assert_called_with(mock_api.jobs_list.return_value[0]['usage'])
-
-
-class WorkflowConfigurationDetailsTestCase(TestCase):
-    def test_get_column_data(self):
-        mock_api = Mock()
-        mock_api.workflow_configurations_list.return_value = [
-            'workflowconfig1', 'workflowconfig2'
-        ]
-        details = WorkflowConfigurationDetails(mock_api)
-        result = details.get_column_data()
-        self.assertEqual(result, ['workflowconfig1', 'workflowconfig2'])

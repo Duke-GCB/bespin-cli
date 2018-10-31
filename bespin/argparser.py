@@ -32,27 +32,19 @@ class ArgParser(object):
         argument_parser = argparse.ArgumentParser(description=DESCRIPTION_STR.format(self.version_str))
         subparsers = argument_parser.add_subparsers()
         self._create_workflows_parser(subparsers)
-        self._create_workflow_configurations_parser(subparsers)
         self._create_job_parser(subparsers)
         return argument_parser
 
     def _create_workflows_parser(self, subparsers):
-        jobs_parser = subparsers.add_parser('workflows', description='workflows commands')
-        jobs_subparser = jobs_parser.add_subparsers()
+        workflows_parser = subparsers.add_parser('workflows', description='workflows commands')
+        workflows_subparser = workflows_parser.add_subparsers()
 
-        list_jobs_parser = jobs_subparser.add_parser('list', description='list workflows')
-        list_jobs_parser.add_argument('-a', '--all', action='store_true',
-                                      help='show all workflow versions instead of just the most recent.')
-        list_jobs_parser.set_defaults(func=self._run_list_workflows)
+        list_parser = workflows_subparser.add_parser('list', description='list workflows')
+        list_parser.add_argument('-a', '--all', action='store_true',
+                                 help='show all workflow versions instead of just the most recent.')
+        list_parser.set_defaults(func=self._run_list_workflows)
 
-    def _create_workflow_configurations_parser(self, subparsers):
-        parser = subparsers.add_parser('workflowconfigurations', description='workflow configurations commands')
-        subparser = parser.add_subparsers()
-
-        list_parser = subparser.add_parser('list', description='list workflow configurations')
-        list_parser.set_defaults(func=self._run_list_workflow_configurations)
-
-        show_parser = subparser.add_parser('show', description='show workflow configuration')
+        show_parser = workflows_subparser.add_parser('configuration', description='show workflow configuration')
         show_parser.add_argument('--tag', type=str, dest='tag', required=True)
         show_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
         show_parser.set_defaults(func=self._run_show_workflow_configuration)
@@ -97,11 +89,8 @@ class ArgParser(object):
     def _run_list_workflows(self, args):
         self.target_object.workflows_list(all_versions=args.all)
 
-    def _run_list_workflow_configurations(self, args):
-        self.target_object.workflow_configurations_list()
-
     def _run_show_workflow_configuration(self, args):
-        self.target_object.workflow_configurations_show(args.tag, args.outfile)
+        self.target_object.workflow_configuration_show(args.tag, args.outfile)
 
     def _run_init_job(self, args):
         self.target_object.init_job(args.tag, args.outfile)

@@ -71,12 +71,7 @@ class Commands(object):
         workflow_data = WorkflowDetails(api, all_versions)
         print(Table(workflow_data.column_names, workflow_data.get_column_data()))
 
-    def workflow_configurations_list(self):
-        api = self._create_api()
-        workflow_data = WorkflowConfigurationDetails(api)
-        print(Table(workflow_data.column_names, workflow_data.get_column_data()))
-
-    def workflow_configurations_show(self, tag, outfile):
+    def workflow_configuration_show(self, tag, outfile):
         api = self._create_api()
         workflow_configuration = api.workflow_configurations_list(tag=tag)[0]
         outfile.write(yaml.dump(workflow_configuration, default_flow_style=False))
@@ -201,27 +196,6 @@ class WorkflowDetails(object):
                     for workflow_configuration in self.api.workflow_configurations_list(workflow_version=version):
                         workflow[self.TAG_COLUMN_NAME] = workflow_configuration['tag']
                         data.append(dict(workflow))
-        return data
-
-
-class WorkflowConfigurationDetails(object):
-    """
-    Creates column data based on workflows/questionnaires
-    """
-    TAG_COLUMN_NAME = "version tag"
-
-    def __init__(self, api):
-        self.api = api
-        self.column_names = ["id", "tag"]
-
-    def get_column_data(self):
-        """
-        Return list of dictionaries of workflow data.
-        :return: [dict]: one record for each questionnaire
-        """
-        data = []
-        for workflow_configuration in self.api.workflow_configurations_list():
-            data.append(workflow_configuration)
         return data
 
 
