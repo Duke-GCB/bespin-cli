@@ -6,7 +6,6 @@ from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
 from tabulate import tabulate
 import yaml
-import json
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -72,6 +71,11 @@ class Commands(object):
         workflow_data = WorkflowDetails(api, all_versions)
         print(Table(workflow_data.column_names, workflow_data.get_column_data()))
 
+    def workflow_configuration_show(self, tag, outfile):
+        api = self._create_api()
+        workflow_configuration = api.workflow_configurations_list(tag=tag)[0]
+        outfile.write(yaml.dump(workflow_configuration, default_flow_style=False))
+
     def jobs_list(self):
         """
         Print out a table of current job statuses
@@ -87,8 +91,8 @@ class Commands(object):
         :param outfile: file: output file that will have the sample job data written to
         """
         api = self._create_api()
-        questionnaire = api.questionnaires_list(tag=tag)[0]
-        job_file = JobQuestionnaire(questionnaire).create_job_file_with_placeholders()
+        workflow_configuration = api.workflow_configurations_list(tag=tag)[0]
+        job_file = JobConfiguration(workflow_configuration).create_job_file_with_placeholders()
         outfile.write(job_file.yaml_str())
         if outfile != sys.stdout:
             print("Wrote job file {}.".format(outfile.name))
@@ -189,8 +193,8 @@ class WorkflowDetails(object):
                 if not self.all_versions:
                     versions = versions[-1:]
                 for version in versions:
-                    for questionnaire in self.api.questionnaires_list(workflow_version=version):
-                        workflow[self.TAG_COLUMN_NAME] = questionnaire['tag']
+                    for workflow_configuration in self.api.workflow_configurations_list(workflow_version=version):
+                        workflow[self.TAG_COLUMN_NAME] = workflow_configuration['tag']
                         data.append(dict(workflow))
         return data
 
@@ -221,8 +225,8 @@ class JobsList(object):
         :param workflow_version: int: workflow version id to lookup tag for
         :return: str: tag associated with workflow_version
         """
-        questionnaires = self.api.questionnaires_list(workflow_version=workflow_version)
-        return questionnaires[0]['tag']
+        configurations = self.api.workflow_configurations_list(workflow_version=workflow_version)
+        return configurations[0]['tag']
 
     def get_elapsed_hours(self, usage):
         if usage:
@@ -258,7 +262,7 @@ class JobFile(object):
         }
         return yaml.dump(data, default_flow_style=False)
 
-    def create_user_job_order_json(self):
+    def create_user_job_order(self):
         """
         Format job order replacing dds remote file paths with filenames that will be staged
         :return: dict: job order for running CWL
@@ -266,7 +270,7 @@ class JobFile(object):
         user_job_order = self.job_order.copy()
         formatter = JobOrderFormatFiles()
         formatter.walk(user_job_order)
-        return json.dumps(user_job_order)
+        return user_job_order
 
     def get_dds_files_details(self):
         """
@@ -284,7 +288,7 @@ class JobFile(object):
         :return: dict: job dictionary returned from bespin api
         """
         dds_user_credential = api.dds_user_credentials_list()[0]
-        questionnaire = api.questionnaires_list(tag=self.workflow_tag)[0]
+        workflow_configuration = api.workflow_configurations_list(tag=self.workflow_tag)[0]
         stage_group = api.stage_group_post()
         dds_project_ids = set()
         sequence = 0
@@ -295,11 +299,9 @@ class JobFile(object):
                                          size=file_size)
             sequence += 1
             dds_project_ids.add(dds_file.project_id)
-        user_job_order_json = self.create_user_job_order_json()
-        job_answer_set = api.job_answer_set_post(self.name, self.fund_code, user_job_order_json,
-                                                 questionnaire['id'], stage_group['id'])
-        job = api.job_answer_set_create_job(job_answer_set['id'])
-
+        user_job_order = self.create_user_job_order()
+        job = api.workflow_configurations_create_job(workflow_configuration['id'], self.name, self.fund_code,
+                                                     stage_group['id'], user_job_order, None)
         dds_file_util = DDSFileUtil()
         for project_id in dds_project_ids:
             dds_file_util.give_download_permissions(project_id, dds_user_credential['dds_id'])
@@ -336,23 +338,20 @@ class JobFileLoader(object):
             raise IncompleteJobFileException(error_msg)
 
 
-class JobQuestionnaire(object):
+class JobConfiguration(object):
     """
-    Creates a placeholder job file based on pass in questionnaire
+    Creates a placeholder job file based on workflow_configuration
     """
-    def __init__(self, questionnaire):
-        """
-        :param questionnaire: dict: questionnaire returned from bespin api
-        """
-        self.questionnaire = questionnaire
+    def __init__(self, workflow_configuration):
+        self.workflow_configuration = workflow_configuration
 
     def create_job_file_with_placeholders(self):
-        return JobFile(workflow_tag=self.questionnaire['tag'],
+        return JobFile(workflow_tag=self.workflow_configuration['tag'],
                        name=STRING_VALUE_PLACEHOLDER, fund_code=STRING_VALUE_PLACEHOLDER,
                        job_order=self.format_user_fields())
 
     def format_user_fields(self):
-        user_fields = json.loads(self.questionnaire['user_fields_json'])
+        user_fields = self.workflow_configuration['user_fields']
         formatted_user_fields = {}
         for user_field in user_fields:
             field_type = user_field.get('type')
