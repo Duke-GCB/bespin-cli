@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from unittest import TestCase
 from bespin.argparser import ArgParser
-from mock import patch, Mock
+from mock import patch, Mock, ANY
 import sys
 
 
@@ -32,7 +32,11 @@ class ArgParserTestCase(TestCase):
 
     def test_create_job(self):
         self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py"])
-        self.target_object.create_job.assert_called()
+        self.target_object.create_job.assert_called_with(ANY, False)
+
+    def test_create_job_dry_run(self):
+        self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py", "--dry-run"])
+        self.target_object.create_job.assert_called_with(ANY, True)
 
     def test_start_job(self):
         self.arg_parser.parse_and_run_commands(["jobs", "start", "123"])
