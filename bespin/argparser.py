@@ -63,6 +63,8 @@ class ArgParser(object):
 
         submit_jobs_parser = jobs_subparser.add_parser('create',
                                                        description="create job using 'infile' from init command")
+        submit_jobs_parser.add_argument('--dry-run', action='store_true',
+                                 help='Do not create a job, instead check the inputs for validity.')
         submit_jobs_parser.set_defaults(func=self._run_create_job)
         submit_jobs_parser.add_argument('infile', type=argparse.FileType('r'), help='file created by init command')
 
@@ -96,7 +98,7 @@ class ArgParser(object):
         self.target_object.init_job(args.tag, args.outfile)
 
     def _run_create_job(self, args):
-        self.target_object.create_job(args.infile)
+        self.target_object.create_job(args.infile, args.dry_run)
 
     def _run_start_job(self, args):
         self.target_object.start_job(args.job_id, args.token)

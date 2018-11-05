@@ -79,12 +79,24 @@ class CommandsTestCase(TestCase):
         mock_job_file_loader.return_value.create_job_file.return_value.create_job.return_value = {'id': 1}
 
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.create_job(infile=mock_infile)
+        commands.create_job(infile=mock_infile, dry_run=False)
 
         mock_job_file_loader.assert_called_with(mock_infile)
         mock_print.assert_has_calls([
             call("Created job 1"),
             call("To start this job run `bespin jobs start 1` .")])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.JobFileLoader')
+    @patch('bespin.commands.print')
+    def test_create_job_dry_run(self, mock_print, mock_job_file_loader, mock_bespin_api, mock_config_file):
+        mock_infile = Mock()
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.create_job(infile=mock_infile, dry_run=True)
+        mock_job_file_loader.assert_called_with(mock_infile)
+        mock_job_file = mock_job_file_loader.return_value.create_job_file.return_value
+        mock_job_file.verify_job.assert_called_with(mock_bespin_api.return_value)
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
