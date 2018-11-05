@@ -101,6 +101,7 @@ class CommandsTestCase(TestCase):
         mock_job_file_loader.assert_called_with(mock_infile)
         mock_job_file = mock_job_file_loader.return_value.create_job_file.return_value
         mock_job_file.verify_job.assert_called_with(mock_bespin_api.return_value)
+        mock_print.assert_called_with('Job file is valid.')
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')

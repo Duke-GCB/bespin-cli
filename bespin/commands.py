@@ -109,6 +109,7 @@ class Commands(object):
         job_file = JobFileLoader(infile).create_job_file()
         if dry_run:
             job_file.verify_job(api)
+            print("Job file is valid.")
         else:
             job = job_file.create_job(api)
             job_id = job['id']
@@ -323,7 +324,6 @@ class JobFile(object):
         self.read_workflow_configuration(api)  # workflow configuration must exist
         self.get_dds_files_details()  # DukeDS input files must exist
         self.create_user_job_order()  # verify that we can generate a job order
-        print("Job file is valid.")
 
 
 class JobFileLoader(object):
