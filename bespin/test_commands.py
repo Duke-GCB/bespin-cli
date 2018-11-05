@@ -85,6 +85,8 @@ class CommandsTestCase(TestCase):
         mock_print.assert_has_calls([
             call("Created job 1"),
             call("To start this job run `bespin jobs start 1` .")])
+        mock_job_file = mock_job_file_loader.return_value.create_job_file.return_value
+        mock_job_file.create_job.assert_called_with(mock_bespin_api.return_value)
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
@@ -92,8 +94,10 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.print')
     def test_create_job_dry_run(self, mock_print, mock_job_file_loader, mock_bespin_api, mock_config_file):
         mock_infile = Mock()
+
         commands = Commands(self.version_str, self.user_agent_str)
         commands.create_job(infile=mock_infile, dry_run=True)
+
         mock_job_file_loader.assert_called_with(mock_infile)
         mock_job_file = mock_job_file_loader.return_value.create_job_file.return_value
         mock_job_file.verify_job.assert_called_with(mock_bespin_api.return_value)
@@ -385,6 +389,38 @@ class JobFileTestCase(TestCase):
         mock_api.workflow_configurations_create_job.assert_called_with(222, 'myjob', '001', 333,
                                                                        job_file.job_order, None)
         mock_dds_file_util.return_value.give_download_permissions.assert_called_with(666, 112)
+
+    @patch('bespin.commands.DDSFileUtil')
+    @patch('bespin.commands.JobOrderFormatFiles')
+    def test_verify_job(self, mock_job_order_format_files, mock_dds_file_util):
+        mock_dds_file_util.return_value.find_file_for_path.return_value = 'filedata1'
+        mock_api = Mock()
+        mock_api.dds_user_credentials_list.return_value = [{'id': 111, 'dds_id': 112}]
+        mock_api.workflow_configurations_list.return_value = [
+            {
+                'id': 222
+            }
+        ]
+        mock_api.stage_group_post.return_value = {
+            'id': 333
+        }
+        job_order = {
+            'myfile': {
+                'class': 'File',
+                'path': 'dds://project_somepath.txt'
+            },
+            'myint': 555
+        }
+        job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order=job_order)
+        job_file.get_dds_files_details = Mock()
+        mock_file = Mock(project_id=666, current_version={'upload': {'size': 4002}})
+        mock_file.id = 777
+        job_file.get_dds_files_details.return_value = [[mock_file, 'somepath']]
+
+        job_file.verify_job(mock_api)
+        mock_api.workflow_configurations_list.assert_called_with(tag='sometag')
+        job_file.get_dds_files_details.assert_called_with()
+        mock_job_order_format_files.return_value.walk.assert_called_with(job_order)
 
 
 class JobFileLoaderTestCase(TestCase):

@@ -320,10 +320,9 @@ class JobFile(object):
         return job
 
     def verify_job(self, api):
-        workflow_configuration = self.read_workflow_configuration(api)
-        for dds_file, path in self.get_dds_files_details():
-            file_size = dds_file.current_version['upload']['size']
-        user_job_order = self.create_user_job_order()
+        self.read_workflow_configuration(api)  # workflow configuration must exist
+        self.get_dds_files_details()  # DukeDS input files must exist
+        self.create_user_job_order()  # verify that we can generate a job order
         print("Job file is valid.")
 
 
