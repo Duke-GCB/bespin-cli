@@ -5,7 +5,7 @@ from setuptools import setup
 from setuptools.command.install import install
 
 # bespin-cli version
-VERSION = "0.0.10"
+VERSION = "0.0.11"
 
 
 class VerifyVersionCommand(install):
