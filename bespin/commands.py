@@ -1,7 +1,7 @@
 from __future__ import print_function
 from bespin.config import ConfigFile
 from bespin.api import BespinApi
-from bespin.exceptions import IncompleteJobFileException
+from bespin.exceptions import IncompleteJobFileException, WorkflowConfigurationNotFoundException
 from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
 from tabulate import tabulate
@@ -98,18 +98,23 @@ class Commands(object):
             print("Wrote job file {}.".format(outfile.name))
             print("Edit this file filling in TODO fields then run `bespin jobs create {}` .".format(outfile.name))
 
-    def create_job(self, infile):
+    def create_job(self, infile, dry_run):
         """
         Create a job based on an input job file (possibly created via init_job)
         Prints out job id.
         :param infile: file: input file to use for creating a job
+        :param dry_run: boolean: when True do not actually create a job just validate the input
         """
         api = self._create_api()
         job_file = JobFileLoader(infile).create_job_file()
-        job = job_file.create_job(api)
-        job_id = job['id']
-        print("Created job {}".format(job_id))
-        print("To start this job run `bespin jobs start {}` .".format(job_id))
+        if dry_run:
+            job_file.verify_job(api)
+            print("Job file is valid.")
+        else:
+            job = job_file.create_job(api)
+            job_id = job['id']
+            print("Created job {}".format(job_id))
+            print("To start this job run `bespin jobs start {}` .".format(job_id))
 
     def start_job(self, job_id, token=None):
         """
@@ -281,6 +286,14 @@ class JobFile(object):
         job_order_details.walk(self.job_order)
         return job_order_details.dds_files
 
+    def read_workflow_configuration(self, api):
+        workflow_configurations = api.workflow_configurations_list(tag=self.workflow_tag)
+        if workflow_configurations:
+            return workflow_configurations[0]
+        raise WorkflowConfigurationNotFoundException(
+            "Unable to find workflow configuration for tag {}".format(self.workflow_tag)
+        )
+
     def create_job(self, api):
         """
         Create a job using the passed on api
@@ -288,7 +301,7 @@ class JobFile(object):
         :return: dict: job dictionary returned from bespin api
         """
         dds_user_credential = api.dds_user_credentials_list()[0]
-        workflow_configuration = api.workflow_configurations_list(tag=self.workflow_tag)[0]
+        workflow_configuration = self.read_workflow_configuration(api)
         stage_group = api.stage_group_post()
         dds_project_ids = set()
         sequence = 0
@@ -306,6 +319,11 @@ class JobFile(object):
         for project_id in dds_project_ids:
             dds_file_util.give_download_permissions(project_id, dds_user_credential['dds_id'])
         return job
+
+    def verify_job(self, api):
+        self.read_workflow_configuration(api)  # workflow configuration must exist
+        self.get_dds_files_details()  # DukeDS input files must exist
+        self.create_user_job_order()  # verify that we can generate a job order
 
 
 class JobFileLoader(object):

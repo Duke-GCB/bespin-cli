@@ -22,3 +22,6 @@ class ProjectDoesNotExistException(UserInputException):
 class JobDoesNotExistException(UserInputException):
     pass
 
+
+class WorkflowConfigurationNotFoundException(UserInputException):
+    pass
