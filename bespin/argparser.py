@@ -58,7 +58,7 @@ class ArgParser(object):
 
         init_jobs_parser = jobs_subparser.add_parser('init', description='init job file')
         init_jobs_parser.set_defaults(func=self._run_init_job)
-        init_jobs_parser.add_argument('--tag', type=str, dest='tag', required=True)
+        init_jobs_parser.add_argument(type=str, dest='tag')
         init_jobs_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
 
         submit_jobs_parser = jobs_subparser.add_parser('create',

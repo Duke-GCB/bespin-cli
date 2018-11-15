@@ -6,6 +6,7 @@ from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
 from tabulate import tabulate
 import yaml
+import json
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -91,9 +92,8 @@ class Commands(object):
         :param outfile: file: output file that will have the sample job data written to
         """
         api = self._create_api()
-        workflow_configuration = api.workflow_configurations_list(tag=tag)[0]
-        job_file = JobConfiguration(workflow_configuration).create_job_file_with_placeholders()
-        outfile.write(job_file.yaml_str())
+        job_file = api.init_job_file(tag)
+        outfile.write(yaml.dump(job_file, default_flow_style=False))
         if outfile != sys.stdout:
             print("Wrote job file {}.".format(outfile.name))
             print("Edit this file filling in TODO fields then run `bespin jobs create {}` .".format(outfile.name))
@@ -197,9 +197,11 @@ class WorkflowDetails(object):
                 versions = workflow['versions']
                 if not self.all_versions:
                     versions = versions[-1:]
-                for version in versions:
-                    for workflow_configuration in self.api.workflow_configurations_list(workflow_version=version):
-                        workflow[self.TAG_COLUMN_NAME] = workflow_configuration['tag']
+                for version_id in versions:
+                    workflow_version = self.api.workflow_version_get(version_id)
+                    for workflow_configuration in self.api.workflow_configurations_list(workflow_version=version_id):
+                        tag = '{}/{}/{}'.format(workflow['tag'], workflow_version['tag'], workflow_configuration['tag'])
+                        workflow[self.TAG_COLUMN_NAME] = tag
                         data.append(dict(workflow))
         return data
 
@@ -257,15 +259,21 @@ class JobFile(object):
         self.name = name
         self.fund_code = fund_code
         self.job_order = job_order
+        self.stage_group_id = None
+        self.job_vm_strategy_id = None
 
-    def yaml_str(self):
+    def to_dict(self):
         data = {
             'name': self.name,
             'fund_code': self.fund_code,
             'job_order': self.job_order,
             'workflow_tag': self.workflow_tag,
         }
-        return yaml.dump(data, default_flow_style=False)
+        if self.stage_group_id:
+            data['stage_group'] = self.stage_group_id
+        if self.job_vm_strategy_id:
+            data['job_vm_strategy'] = self.job_vm_strategy_id
+        return data
 
     def create_user_job_order(self):
         """
@@ -301,20 +309,20 @@ class JobFile(object):
         :return: dict: job dictionary returned from bespin api
         """
         dds_user_credential = api.dds_user_credentials_list()[0]
-        workflow_configuration = self.read_workflow_configuration(api)
+        self.read_workflow_configuration(api)
         stage_group = api.stage_group_post()
+        self.stage_group_id = stage_group['id']
         dds_project_ids = set()
         sequence = 0
         for dds_file, path in self.get_dds_files_details():
             file_size = dds_file.current_version['upload']['size']
             api.dds_job_input_files_post(dds_file.project_id, dds_file.id, path, 0, sequence,
-                                         dds_user_credential['id'], stage_group_id=stage_group['id'],
+                                         dds_user_credential['id'], stage_group_id=self.stage_group_id,
                                          size=file_size)
             sequence += 1
             dds_project_ids.add(dds_file.project_id)
-        user_job_order = self.create_user_job_order()
-        job = api.workflow_configurations_create_job(workflow_configuration['id'], self.name, self.fund_code,
-                                                     stage_group['id'], user_job_order, None)
+        self.job_order = self.create_user_job_order()
+        job = api.create_job(self.to_dict())
         dds_file_util = DDSFileUtil()
         for project_id in dds_project_ids:
             dds_file_util.give_download_permissions(project_id, dds_user_credential['dds_id'])

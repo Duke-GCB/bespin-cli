@@ -124,6 +124,12 @@ class BespinApi(object):
         }
         return self._post_request('/dds-job-input-files/', data)
 
+    def init_job_file(self, tag):
+        return self._post_request('/jobs/init-job-file/', {'workflow_tag': tag})
+
+    def create_job(self, job_file_payload):
+        return self._post_request('/jobs/create-job/', job_file_payload)
+
     def authorize_job(self, job_id, token):
         return self._post_request('/jobs/{}/authorize/'.format(job_id), {'token': token})
 

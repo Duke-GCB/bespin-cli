@@ -62,13 +62,13 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.print')
     def test_init_job(self, mock_print, mock_job_configuration, mock_bespin_api, mock_config_file):
         mock_outfile = Mock()
+        mock_bespin_api.return_value.init_job_file.return_value = {}
 
         commands = Commands(self.version_str, self.user_agent_str)
         commands.init_job(tag='rnaseq/v1/human', outfile=mock_outfile)
 
-        mock_bespin_api.return_value.workflow_configurations_list.assert_called_with(tag='rnaseq/v1/human')
-        mock_job_file = mock_job_configuration.return_value.create_job_file_with_placeholders.return_value
-        mock_outfile.write.assert_called_with(mock_job_file.yaml_str.return_value)
+        mock_bespin_api.return_value.init_job_file.assert_called_with('rnaseq/v1/human')
+        mock_outfile.write.assert_called_with('{}\n')
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
@@ -195,16 +195,21 @@ class TableTestCase(TestCase):
 
 class WorkflowDetailsTestCase(TestCase):
     def test_get_column_data(self):
+        def make_tag(num):
+            return {'tag': 'v{}'.format(num)}
+
         mock_api = Mock()
         mock_api.workflows_list.return_value = [
-            {'id': 1, 'name': 'exome', 'versions': [1, 2]}
+            {'id': 1, 'name': 'exome', 'versions': [1, 2], 'tag': 'exome'}
         ]
+        mock_api.workflow_version_get = make_tag
         mock_api.workflow_configurations_list.return_value = [
-            {'tag': 'exome/v2/human'}
+            {'tag': 'human'}
         ]
         details = WorkflowDetails(mock_api, all_versions=False)
         expected_data = [{'id': 1,
                           'version tag': 'exome/v2/human',
+                          'tag': 'exome',
                           'name': 'exome',
                           'versions': [1, 2]}]
         column_data = details.get_column_data()
@@ -214,8 +219,8 @@ class WorkflowDetailsTestCase(TestCase):
 
         mock_api.workflow_configurations_list.reset_mock()
         mock_api.workflow_configurations_list.side_effect = [
-            [{'tag': 'exome/v1/human'}],
-            [{'tag': 'exome/v2/human'}]
+            [{'tag': 'human'}],
+            [{'tag': 'human'}]
         ]
         details = WorkflowDetails(mock_api, all_versions=True)
         expected_data = [
@@ -223,12 +228,14 @@ class WorkflowDetailsTestCase(TestCase):
                 'id': 1,
                 'version tag': 'exome/v1/human',
                 'name': 'exome',
+                'tag': 'exome',
                 'versions': [1, 2]
             },
             {
                 'id': 1,
                 'version tag': 'exome/v2/human',
                 'name': 'exome',
+                'tag': 'exome',
                 'versions': [1, 2]
             },
         ]
@@ -262,16 +269,15 @@ class WorkflowDetailsTestCase(TestCase):
 
 
 class JobFileTestCase(TestCase):
-    def test_yaml_str(self):
+    def test_to_dict(self):
         job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={})
-        yaml_str = job_file.yaml_str()
         expected_dict = {
             'fund_code': '001',
             'job_order': {},
             'name': 'myjob',
             'workflow_tag': 'sometag'
         }
-        self.assertEqual(yaml.load(yaml_str), expected_dict)
+        self.assertEqual(job_file.to_dict(), expected_dict)
 
     def test_create_user_job_order_json(self):
         job_file = JobFile(workflow_tag='sometag', name='myjob', fund_code='001', job_order={
@@ -387,8 +393,19 @@ class JobFileTestCase(TestCase):
         mock_api.workflow_configurations_list.assert_called_with(tag='sometag')
         mock_api.dds_job_input_files_post.assert_called_with(666, 777, 'somepath', 0, 0, 111, stage_group_id=333,
                                                              size=4002)
-        mock_api.workflow_configurations_create_job.assert_called_with(222, 'myjob', '001', 333,
-                                                                       job_file.job_order, None)
+        mock_api.create_job.assert_called_with({
+            'name': 'myjob',
+            'fund_code': '001',
+            'job_order': {
+                'myfile': {
+                    'class': 'File',
+                    'path': 'dds_project_somepath.txt'
+                },
+                'myint': 555
+            },
+            'workflow_tag': 'sometag',
+            'stage_group': 333
+        })
         mock_dds_file_util.return_value.give_download_permissions.assert_called_with(666, 112)
 
     @patch('bespin.commands.DDSFileUtil')

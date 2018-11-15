@@ -27,7 +27,7 @@ class ArgParserTestCase(TestCase):
         self.target_object.workflow_configuration_show.assert_called_with("exome/v1/human", sys.stdout)
 
     def test_init_job(self):
-        self.arg_parser.parse_and_run_commands(["jobs", "init", "--tag", "exome/v1/human"])
+        self.arg_parser.parse_and_run_commands(["jobs", "init", "exome/v1/human"])
         self.target_object.init_job.assert_called_with("exome/v1/human", sys.stdout)
 
     def test_create_job(self):
