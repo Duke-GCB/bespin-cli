@@ -98,15 +98,17 @@ class Commands(object):
             print("Wrote job file {}.".format(outfile.name))
             print("Edit this file filling in TODO fields then run `bespin jobs create {}` .".format(outfile.name))
 
-    def create_job(self, infile, dry_run):
+    def create_job(self, infile, dry_run, share_group, vm_strategy=None):
         """
         Create a job based on an input job file (possibly created via init_job)
         Prints out job id.
         :param infile: file: input file to use for creating a job
         :param dry_run: boolean: when True do not actually create a job just validate the input
+        :param share_group: int: share group id
+        :param vm_strategy: int: vm strategy id
         """
         api = self._create_api()
-        job_file = JobFileLoader(infile).create_job_file()
+        job_file = JobFileLoader(infile).create_job_file(share_group, vm_strategy)
         if dry_run:
             job_file.verify_job(api)
             print("Job file is valid.")
@@ -155,6 +157,16 @@ class Commands(object):
         api = self._create_api()
         api.delete_job(job_id)
         print("Deleted job {}".format(job_id))
+
+    def list_share_groups(self):
+        api = self._create_api()
+        item_list = ShareGroupsList(api)
+        print(Table(item_list.column_names, item_list.get_column_data()))
+
+    def list_vm_strategies(self):
+        api = self._create_api()
+        item_list = VmStrategiesList(api)
+        print(Table(item_list.column_names, item_list.get_column_data()))
 
 
 class Table(object):
@@ -244,11 +256,51 @@ class JobsList(object):
         return None
 
 
+class ShareGroupsList(object):
+    def __init__(self, api):
+        self.api = api
+        self.column_names = ["id", "name", "email"]
+
+    def get_column_data(self):
+        data = []
+        for item in self.api.get_share_groups():
+            data.append(item)
+        return data
+
+
+class VmStrategiesList(object):
+    FLAVOR_NAME_FIELDNAME = "type"
+    CPUS_FIELDNAME = "cpus"
+    VOLUME_SIZE_FIELDNAME = "volume size (g)"
+    def __init__(self, api):
+        self.api = api
+        self.column_names = ["id", "name", self.FLAVOR_NAME_FIELDNAME, self.CPUS_FIELDNAME, self.VOLUME_SIZE_FIELDNAME]
+
+    def get_column_data(self):
+        data = []
+        for item in self.api.get_vm_strategies():
+            self.add_new_fields(item)
+            data.append(item)
+        return data
+
+    def add_new_fields(self, item):
+        volume_size_factor = item['volume_size_factor']
+        volume_size_base = item['volume_size_base']
+        vm_flavor_name = item["vm_flavor"]["name"]
+        vm_flavor_cpus = item["vm_flavor"]["cpus"]
+
+        item[self.FLAVOR_NAME_FIELDNAME] = vm_flavor_name
+        item[self.CPUS_FIELDNAME] = vm_flavor_cpus
+
+        volume_size_format = "{} x Input Data Size + {}"
+        item[self.VOLUME_SIZE_FIELDNAME] = volume_size_format.format(volume_size_factor, volume_size_base)
+
+
 class JobFile(object):
     """
     Contains data for creating a job.
     """
-    def __init__(self, workflow_tag, name, fund_code, job_order):
+    def __init__(self, workflow_tag, name, fund_code, job_order, share_group_id=None, job_vm_strategy_id=None):
         """
         :param workflow_tag: str: questionnaire tag from bespin-api
         :param name: str: user name for the job
@@ -259,8 +311,9 @@ class JobFile(object):
         self.name = name
         self.fund_code = fund_code
         self.job_order = job_order
+        self.share_group_id = share_group_id
+        self.job_vm_strategy_id = job_vm_strategy_id
         self.stage_group_id = None
-        self.job_vm_strategy_id = None
 
     def to_dict(self):
         data = {
@@ -271,6 +324,8 @@ class JobFile(object):
         }
         if self.stage_group_id:
             data['stage_group'] = self.stage_group_id
+        if self.share_group_id:
+            data['share_group'] = self.share_group_id
         if self.job_vm_strategy_id:
             data['job_vm_strategy'] = self.job_vm_strategy_id
         return data
@@ -341,12 +396,14 @@ class JobFileLoader(object):
     def __init__(self, infile):
         self.data = yaml.load(infile)
 
-    def create_job_file(self):
+    def create_job_file(self, share_group_id, vm_strategy_id):
         self.validate_job_file_data()
         job_file = JobFile(workflow_tag=self.data['workflow_tag'],
                            name=self.data['name'],
                            fund_code=self.data['fund_code'],
-                           job_order=self.data['job_order'])
+                           job_order=self.data['job_order'],
+                           share_group_id=share_group_id,
+                           job_vm_strategy_id=vm_strategy_id)
         return job_file
 
     def validate_job_file_data(self):

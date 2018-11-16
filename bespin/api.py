@@ -160,6 +160,18 @@ class BespinApi(object):
     def dds_user_credentials_list(self):
         return self._get_request('/dds-user-credentials/')
 
+    def get_share_groups(self, name=None):
+        url = '/share-groups/'
+        if name:
+            url += "?name={}".format(name)
+        return self._get_request(url)
+
+    def get_vm_strategies(self, name=None):
+        url = '/vm-strategies/'
+        if name:
+            url += "?name={}".format(name)
+        return self._get_request(url)
+
 
 class BespinException(Exception):
     pass

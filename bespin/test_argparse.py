@@ -31,12 +31,16 @@ class ArgParserTestCase(TestCase):
         self.target_object.init_job.assert_called_with("exome/v1/human", sys.stdout)
 
     def test_create_job(self):
-        self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py"])
-        self.target_object.create_job.assert_called_with(ANY, False)
+        self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py", "--share-group", "1"])
+        self.target_object.create_job.assert_called_with(ANY, False, '1', None)
 
     def test_create_job_dry_run(self):
-        self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py", "--dry-run"])
-        self.target_object.create_job.assert_called_with(ANY, True)
+        self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py", "--dry-run", "--share-group", "2"])
+        self.target_object.create_job.assert_called_with(ANY, True,  '2', None)
+
+    def test_create_job_with_vm_strategy(self):
+        self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py", "--share-group", "1", "--vm-strategy", "2"])
+        self.target_object.create_job.assert_called_with(ANY, False,  '1', '2')
 
     def test_start_job(self):
         self.arg_parser.parse_and_run_commands(["jobs", "start", "123"])

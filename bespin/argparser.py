@@ -33,6 +33,8 @@ class ArgParser(object):
         subparsers = argument_parser.add_subparsers()
         self._create_workflows_parser(subparsers)
         self._create_job_parser(subparsers)
+        self._create_share_groups_parser(subparsers)
+        self._create_vm_strategies_parser(subparsers)
         return argument_parser
 
     def _create_workflows_parser(self, subparsers):
@@ -63,6 +65,10 @@ class ArgParser(object):
 
         submit_jobs_parser = jobs_subparser.add_parser('create',
                                                        description="create job using 'infile' from init command")
+        submit_jobs_parser.add_argument('--share-group', type=str, required=True,
+                                        help="id of the share group use for this job")
+        submit_jobs_parser.add_argument('--vm-strategy', type=str,
+                                        help="id of the vm strategy use for this job")
         submit_jobs_parser.add_argument('--dry-run', action='store_true',
                                  help='Do not create a job, instead check the inputs for validity.')
         submit_jobs_parser.set_defaults(func=self._run_create_job)
@@ -85,6 +91,20 @@ class ArgParser(object):
         delete_jobs_parser.set_defaults(func=self._run_delete_job)
         delete_jobs_parser.add_argument('job_id', type=int)
 
+    def _create_share_groups_parser(self, subparsers):
+        share_groups_parser = subparsers.add_parser('sharegroups', description='sharegroups commands')
+        share_groups_subparser = share_groups_parser.add_subparsers()
+
+        list_parser = share_groups_subparser.add_parser('list', description='list share groups')
+        list_parser.set_defaults(func=self._run_list_share_groups)
+
+    def _create_vm_strategies_parser(self, subparsers):
+        share_groups_parser = subparsers.add_parser('vmstrategies', description='VM Stratgies commands')
+        share_groups_subparser = share_groups_parser.add_subparsers()
+
+        list_parser = share_groups_subparser.add_parser('list', description='list vm strategies')
+        list_parser.set_defaults(func=self._run_list_vm_strategies)
+
     def _run_list_jobs(self, _):
         self.target_object.jobs_list()
 
@@ -98,7 +118,7 @@ class ArgParser(object):
         self.target_object.init_job(args.tag, args.outfile)
 
     def _run_create_job(self, args):
-        self.target_object.create_job(args.infile, args.dry_run)
+        self.target_object.create_job(args.infile, args.dry_run, args.share_group, args.vm_strategy)
 
     def _run_start_job(self, args):
         self.target_object.start_job(args.job_id, args.token)
@@ -111,6 +131,12 @@ class ArgParser(object):
 
     def _run_delete_job(self, args):
         self.target_object.delete_job(args.job_id)
+
+    def _run_list_share_groups(self, args):
+        self.target_object.list_share_groups()
+
+    def _run_list_vm_strategies(self, args):
+        self.target_object.list_vm_strategies()
 
     @staticmethod
     def read_argument_file_contents(infile):
