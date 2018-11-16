@@ -214,7 +214,7 @@ class TableTestCase(TestCase):
 class WorkflowDetailsTestCase(TestCase):
     def test_get_column_data(self):
         def make_tag(num):
-            return {'tag': 'v{}'.format(num)}
+            return {'tag': 'exome/v{}'.format(num)}
 
         mock_api = Mock()
         mock_api.workflows_list.return_value = [
