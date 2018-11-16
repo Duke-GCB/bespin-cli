@@ -212,7 +212,7 @@ class WorkflowDetails(object):
                 for version_id in versions:
                     workflow_version = self.api.workflow_version_get(version_id)
                     for workflow_configuration in self.api.workflow_configurations_list(workflow_version=version_id):
-                        tag = '{}/{}/{}'.format(workflow['tag'], workflow_version['tag'], workflow_configuration['tag'])
+                        tag = '{}/{}'.format(workflow_version['tag'], workflow_configuration['tag'])
                         workflow[self.TAG_COLUMN_NAME] = tag
                         data.append(dict(workflow))
         return data
