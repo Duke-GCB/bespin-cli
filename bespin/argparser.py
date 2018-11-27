@@ -56,8 +56,9 @@ class ArgParser(object):
         list_parser = configurations_subparser.add_parser('list', description='list workflow configurations')
         list_parser.set_defaults(func=self._run_list_workflow_configurations)
 
-        joborder_parser = configurations_subparser.add_parser('joborder', description='show workflow configuration job order')
-        joborder_parser.add_argument('--tag', type=str, dest='tag', required=True)
+        joborder_parser = configurations_subparser.add_parser('job-order',
+                                                              description='show workflow configuration job order')
+        joborder_parser.add_argument('workflow_configuration_id', type=int)
         joborder_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
         joborder_parser.set_defaults(func=self._run_show_workflow_job_order)
 
@@ -143,7 +144,7 @@ class ArgParser(object):
         self.target_object.workflows_list(all_versions=args.all)
 
     def _run_show_workflow_job_order(self, args):
-        self.target_object.workflow_configuration_job_order_show(args.tag, args.outfile)
+        self.target_object.workflow_configuration_job_order_show(args.workflow_configuration_id, args.outfile)
 
     def _run_list_workflow_configurations(self, args):
         self.target_object.workflow_configurations_list()

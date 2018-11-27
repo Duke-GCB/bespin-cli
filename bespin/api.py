@@ -109,6 +109,9 @@ class BespinApi(object):
                 url += "tag={}".format(tag)
         return self._get_request(url)
 
+    def workflow_configurations_get(self, workflow_configuration_id):
+        return self._get_request('/workflow-configurations/{}/'.format(workflow_configuration_id))
+
     def workflow_configurations_post(self, name, workflow, default_vm_strategy, share_group, system_job_order):
         url = '/admin/workflow-configurations/'
         data = {

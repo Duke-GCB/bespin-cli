@@ -72,9 +72,9 @@ class Commands(object):
         workflow_data = WorkflowDetails(api, all_versions)
         print(Table(workflow_data.column_names, workflow_data.get_column_data()))
 
-    def workflow_configuration_job_order_show(self, tag, outfile):
+    def workflow_configuration_job_order_show(self, workflow_configuration_id, outfile):
         api = self._create_api()
-        workflow_configuration = api.workflow_configurations_list(tag=tag)[0]
+        workflow_configuration = api.workflow_configurations_get(workflow_configuration_id)
         outfile.write(yaml.dump(workflow_configuration['system_job_order'], default_flow_style=False))
 
     def jobs_list(self):
