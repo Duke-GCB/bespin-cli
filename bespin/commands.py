@@ -4,6 +4,7 @@ from bespin.api import BespinApi
 from bespin.exceptions import IncompleteJobFileException, WorkflowConfigurationNotFoundException
 from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
+from bespin.workflow import CWLWorkflowVersion
 from tabulate import tabulate
 import yaml
 import sys
@@ -184,14 +185,9 @@ class Commands(object):
 
     def create_workflow_version(self, workflow, version_num, description, url):
         api = self._create_api()
-        fields = []
-        api.workflow_versions_post(
-            workflow=workflow,
-            version_num=version_num,
-            description=description,
-            url=url,
-            fields=fields
-        )
+        workflow_version = CWLWorkflowVersion(workflow, version_num, description, url)
+        workflow_version.create(api)
+
 
 class Table(object):
     """
@@ -350,9 +346,10 @@ class WorkflowConfigurationsList(object):
 
 
 class WorkflowVersionsList(object):
+    WORKFLOW_FIELDNAME="workflow"
     def __init__(self, api):
         self.api = api
-        self.column_names = ["id", "description", "url", "version"]
+        self.column_names = ["id", "description", self.WORKFLOW_FIELDNAME, "version", "url"]
 
     def get_column_data(self):
         data = []
@@ -362,7 +359,12 @@ class WorkflowVersionsList(object):
         return data
 
     def add_new_fields(self, item):
-        pass
+        workflow = self.api.workflow_get(item['workflow'])
+        self.add_field(item, self.WORKFLOW_FIELDNAME, workflow, 'tag')
+
+    @staticmethod
+    def add_field(dest, dest_fieldname, source, source_fieldname):
+        dest[dest_fieldname] = "{} ({})".format(source[source_fieldname], source['id'])
 
 class JobFile(object):
     """

@@ -35,6 +35,8 @@ setup(name='bespin-cli',
           'requests',
           'six',
           'tabulate',
+          'cwltool==1.0.20181118133959',
+          'html5lib==1.0.1',
       ],
       entry_points={
           'console_scripts': [
