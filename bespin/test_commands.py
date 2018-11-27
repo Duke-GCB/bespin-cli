@@ -76,7 +76,7 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.print')
     def test_create_job(self, mock_print, mock_job_file_loader, mock_bespin_api, mock_config_file):
         mock_infile = Mock()
-        mock_job_file_loader.return_value.create_job_file.return_value.create_job.return_value = {'id': 1}
+        mock_job_file_loader.return_value.create_job_file.return_value.create_job.return_value = {'job': 1}
 
         commands = Commands(self.version_str, self.user_agent_str)
         commands.create_job(infile=mock_infile, dry_run=False, share_group=1)
@@ -109,7 +109,7 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.print')
     def test_create_job_with_vm_strategy(self, mock_print, mock_job_file_loader, mock_bespin_api, mock_config_file):
         mock_infile = Mock()
-        mock_job_file_loader.return_value.create_job_file.return_value.create_job.return_value = {'id': 1}
+        mock_job_file_loader.return_value.create_job_file.return_value.create_job.return_value = {'job': 1}
 
         commands = Commands(self.version_str, self.user_agent_str)
         commands.create_job(infile=mock_infile, dry_run=False, share_group=1, vm_strategy=2)
@@ -190,14 +190,18 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.print')
-    def test_workflow_configuration_show(self, mock_print, mock_bespin_api, mock_config_file):
+    def test_workflow_configuration_job_order_show(self, mock_print, mock_bespin_api, mock_config_file):
         mock_outfile = Mock()
         mock_bespin_api.return_value.workflow_configurations_list.return_value = [
-            {}
+            {
+                "system_job_order": {
+                    "threads": 2
+                }
+            }
         ]
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflow_configuration_show(tag='mytag', outfile=mock_outfile)
-        mock_outfile.write.assert_called_with('{}\n')
+        commands.workflow_configuration_job_order_show(tag='mytag', outfile=mock_outfile)
+        mock_outfile.write.assert_called_with('threads: 2\n')
 
 
 class TableTestCase(TestCase):
