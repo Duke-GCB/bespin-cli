@@ -46,10 +46,10 @@ class ArgParser(object):
                                  help='show all workflow versions instead of just the most recent.')
         list_parser.set_defaults(func=self._run_list_workflows)
 
-        show_parser = workflows_subparser.add_parser('configuration', description='show workflow configuration')
-        show_parser.add_argument('--tag', type=str, dest='tag', required=True)
-        show_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
-        show_parser.set_defaults(func=self._run_show_workflow_configuration)
+        joborder_parser = workflows_subparser.add_parser('joborder', description='show workflow job order')
+        joborder_parser.add_argument('--tag', type=str, dest='tag', required=True)
+        joborder_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
+        joborder_parser.set_defaults(func=self._run_show_workflow_job_order)
 
     def _create_job_parser(self, subparsers):
         jobs_parser = subparsers.add_parser('jobs')
@@ -111,8 +111,8 @@ class ArgParser(object):
     def _run_list_workflows(self, args):
         self.target_object.workflows_list(all_versions=args.all)
 
-    def _run_show_workflow_configuration(self, args):
-        self.target_object.workflow_configuration_show(args.tag, args.outfile)
+    def _run_show_workflow_job_order(self, args):
+        self.target_object.workflow_configuration_job_order_show(args.tag, args.outfile)
 
     def _run_init_job(self, args):
         self.target_object.init_job(args.tag, args.outfile)

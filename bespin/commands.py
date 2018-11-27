@@ -72,10 +72,10 @@ class Commands(object):
         workflow_data = WorkflowDetails(api, all_versions)
         print(Table(workflow_data.column_names, workflow_data.get_column_data()))
 
-    def workflow_configuration_show(self, tag, outfile):
+    def workflow_configuration_job_order_show(self, tag, outfile):
         api = self._create_api()
         workflow_configuration = api.workflow_configurations_list(tag=tag)[0]
-        outfile.write(yaml.dump(workflow_configuration, default_flow_style=False))
+        outfile.write(yaml.dump(workflow_configuration['system_job_order'], default_flow_style=False))
 
     def jobs_list(self):
         """
@@ -113,8 +113,8 @@ class Commands(object):
             job_file.verify_job(api)
             print("Job file is valid.")
         else:
-            job = job_file.create_job(api)
-            job_id = job['id']
+            result = job_file.create_job(api)
+            job_id = result['job']
             print("Created job {}".format(job_id))
             print("To start this job run `bespin jobs start {}` .".format(job_id))
 
