@@ -6,7 +6,6 @@ from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
 from tabulate import tabulate
 import yaml
-import json
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 
