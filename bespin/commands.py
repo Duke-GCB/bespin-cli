@@ -168,6 +168,31 @@ class Commands(object):
         item_list = VmStrategiesList(api)
         print(Table(item_list.column_names, item_list.get_column_data()))
 
+    def workflow_configurations_list(self):
+        api = self._create_api()
+        item_list = WorkflowConfigurationsList(api)
+        print(Table(item_list.column_names, item_list.get_column_data()))
+
+    def create_workflow_configuration(self, name, workflow, default_vm_strategy, share_group, joborder_infile):
+        api = self._create_api()
+        joborder = yaml.load(joborder_infile)
+        api.workflow_configurations_post(name, workflow, default_vm_strategy, share_group, joborder)
+
+    def list_workflow_versions(self):
+        api = self._create_api()
+        item_list = WorkflowVersionsList(api)
+        print(Table(item_list.column_names, item_list.get_column_data()))
+
+    def create_workflow_version(self, workflow, version_num, description, url):
+        api = self._create_api()
+        fields = []
+        api.workflow_versions_post(
+            workflow=workflow,
+            version_num=version_num,
+            description=description,
+            url=url,
+            fields=fields
+        )
 
 class Table(object):
     """
@@ -295,6 +320,50 @@ class VmStrategiesList(object):
         volume_size_format = "{} x Input Data Size + {}"
         item[self.VOLUME_SIZE_FIELDNAME] = volume_size_format.format(volume_size_factor, volume_size_base)
 
+
+class WorkflowConfigurationsList(object):
+    WORKFLOW_FIELDNAME = "workflow"
+    SHARE_GROUP_FIELDNAME = "share group"
+    DEFAULT_VM_STRATEGY_FIELDNAME = "Default VM Strategy"
+    def __init__(self, api):
+        self.api = api
+        self.column_names = ["id", "tag", self.WORKFLOW_FIELDNAME, self.SHARE_GROUP_FIELDNAME,
+                             self.DEFAULT_VM_STRATEGY_FIELDNAME]
+
+    def get_column_data(self):
+        data = []
+        for item in self.api.workflow_configurations_list():
+            self.add_new_fields(item)
+            data.append(item)
+        return data
+
+    def add_new_fields(self, item):
+        workflow = self.api.workflow_get(item['workflow'])
+        self.add_field(item, self.WORKFLOW_FIELDNAME, workflow, 'tag')
+        share_group = self.api.get_share_group(item['share_group'])
+        self.add_field(item, self.SHARE_GROUP_FIELDNAME, share_group, 'name')
+        vm_strategy = self.api.get_vm_strategy(item['default_vm_strategy'])
+        self.add_field(item, self.DEFAULT_VM_STRATEGY_FIELDNAME, vm_strategy, 'name')
+
+    @staticmethod
+    def add_field(dest, dest_fieldname, source, source_fieldname):
+        dest[dest_fieldname] = "{} ({})".format(source[source_fieldname], source['id'])
+
+
+class WorkflowVersionsList(object):
+    def __init__(self, api):
+        self.api = api
+        self.column_names = ["id", "description", "url", "version"]
+
+    def get_column_data(self):
+        data = []
+        for item in self.api.workflow_versions_list():
+            self.add_new_fields(item)
+            data.append(item)
+        return data
+
+    def add_new_fields(self, item):
+        pass
 
 class JobFile(object):
     """

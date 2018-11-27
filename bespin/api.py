@@ -78,8 +78,21 @@ class BespinApi(object):
     def workflows_list(self):
         return self._get_request('/workflows/')
 
+    def workflow_get(self, workflow_id):
+        return self._get_request('/workflows/{}/'.format(workflow_id))
+
     def workflow_versions_list(self):
         return self._get_request('/workflow-versions/')
+
+    def workflow_versions_post(self, workflow, version_num, description, url, fields):
+        data = {
+            "workflow": workflow,
+            "version": version_num,
+            "description": description,
+            "url": url,
+            "fields": fields
+        }
+        return self._post_request('/admin/workflow-versions/', data)
 
     def workflow_version_get(self, workflow_version):
         return self._get_request('/workflow-versions/{}/'.format(workflow_version))
@@ -95,6 +108,17 @@ class BespinApi(object):
                     url += "&"
                 url += "tag={}".format(tag)
         return self._get_request(url)
+
+    def workflow_configurations_post(self, name, workflow, default_vm_strategy, share_group, system_job_order):
+        url = '/admin/workflow-configurations/'
+        data = {
+            'name': name,
+            'workflow': workflow,
+            'default_vm_strategy': default_vm_strategy,
+            'share_group': share_group,
+            'system_job_order': system_job_order
+        }
+        return self._post_request(url, data)
 
     def workflow_configurations_create_job(self, workflow_configuration_id, job_name, fund_code, stage_group,
                                            user_job_order, job_vm_strategy=None):
@@ -166,10 +190,18 @@ class BespinApi(object):
             url += "?name={}".format(name)
         return self._get_request(url)
 
+    def get_share_group(self, share_group_id):
+        url = '/share-groups/{}/'.format(share_group_id)
+        return self._get_request(url)
+
     def get_vm_strategies(self, name=None):
         url = '/vm-strategies/'
         if name:
             url += "?name={}".format(name)
+        return self._get_request(url)
+
+    def get_vm_strategy(self, vm_strategy_id):
+        url = '/vm-strategies/{}/'.format(vm_strategy_id)
         return self._get_request(url)
 
 

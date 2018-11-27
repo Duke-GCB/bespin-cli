@@ -46,10 +46,41 @@ class ArgParser(object):
                                  help='show all workflow versions instead of just the most recent.')
         list_parser.set_defaults(func=self._run_list_workflows)
 
-        joborder_parser = workflows_subparser.add_parser('joborder', description='show workflow job order')
+        self._create_workflow_configurations_parser(workflows_subparser)
+        self._create_workflow_versions_parser(workflows_subparser)
+
+    def _create_workflow_configurations_parser(self, subparsers):
+        configurations_parser = subparsers.add_parser('configurations', description='workflow configuration commands')
+        configurations_subparser = configurations_parser.add_subparsers()
+
+        list_parser = configurations_subparser.add_parser('list', description='list workflow configurations')
+        list_parser.set_defaults(func=self._run_list_workflow_configurations)
+
+        joborder_parser = configurations_subparser.add_parser('joborder', description='show workflow configuration job order')
         joborder_parser.add_argument('--tag', type=str, dest='tag', required=True)
         joborder_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
         joborder_parser.set_defaults(func=self._run_show_workflow_job_order)
+
+        create_parser = configurations_subparser.add_parser('create', description='create new workflow configuration')
+        create_parser.add_argument('--name', type=str, dest='name', required=True)
+        create_parser.add_argument('--workflow', type=int, dest='workflow', required=True)
+        create_parser.add_argument('--default-vm-strategy', type=int, dest='default_vm_strategy', required=True)
+        create_parser.add_argument('--share-group', type=int, dest='share_group', required=True)
+        create_parser.add_argument('joborder', type=argparse.FileType('r'), help='job order file')
+        create_parser.set_defaults(func=self._run_create_workflow_configuration)
+
+    def _create_workflow_versions_parser(self, subparsers):
+        versions_parser = subparsers.add_parser('versions', description='workflow versions commands')
+        versions_subparser = versions_parser.add_subparsers()
+        list_parser = versions_subparser.add_parser('list', description='list workflow versions')
+        list_parser.set_defaults(func=self._run_list_workflow_versions)
+
+        create_parser = versions_subparser.add_parser('create', description='create new workflow version')
+        create_parser.add_argument('--workflow', type=int, required=True)
+        create_parser.add_argument('--version', type=int, dest='version_num', required=True)
+        create_parser.add_argument('--description', type=str, required=True)
+        create_parser.add_argument('--url', type=str, required=True, help='URL to packed cwl workflow')
+        create_parser.set_defaults(func=self._run_create_workflow_version)
 
     def _create_job_parser(self, subparsers):
         jobs_parser = subparsers.add_parser('jobs')
@@ -114,11 +145,24 @@ class ArgParser(object):
     def _run_show_workflow_job_order(self, args):
         self.target_object.workflow_configuration_job_order_show(args.tag, args.outfile)
 
+    def _run_list_workflow_configurations(self, args):
+        self.target_object.workflow_configurations_list()
+
     def _run_init_job(self, args):
         self.target_object.init_job(args.tag, args.outfile)
 
     def _run_create_job(self, args):
         self.target_object.create_job(args.infile, args.dry_run, args.share_group, args.vm_strategy)
+
+    def _run_create_workflow_configuration(self, args):
+        self.target_object.create_workflow_configuration(args.name, args.workflow, args.default_vm_strategy,
+                                                         args.share_group, args.joborder)
+
+    def _run_list_workflow_versions(self, args):
+        self.target_object.list_workflow_versions()
+
+    def _run_create_workflow_version(self, args):
+        self.target_object.create_workflow_version(args.workflow, args.version_num, args.description, args.url)
 
     def _run_start_job(self, args):
         self.target_object.start_job(args.job_id, args.token)
