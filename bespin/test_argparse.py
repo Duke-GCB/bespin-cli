@@ -26,9 +26,9 @@ class ArgParserTestCase(TestCase):
         self.arg_parser.parse_and_run_commands(["workflows", "configurations", "job-order", "3"])
         self.target_object.workflow_configuration_job_order_show.assert_called_with(3, sys.stdout)
 
-    def test_init_job(self):
+    def test_job_template_init(self):
         self.arg_parser.parse_and_run_commands(["jobs", "init", "exome/v1/human"])
-        self.target_object.init_job.assert_called_with("exome/v1/human", sys.stdout)
+        self.target_object.job_template_init.assert_called_with("exome/v1/human", sys.stdout)
 
     def test_create_job(self):
         self.arg_parser.parse_and_run_commands(["jobs", "create", "setup.py"])

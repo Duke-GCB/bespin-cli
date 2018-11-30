@@ -91,9 +91,9 @@ class ArgParser(object):
         list_jobs_parser.set_defaults(func=self._run_list_jobs)
 
         init_jobs_parser = jobs_subparser.add_parser('init', description='init job file')
-        init_jobs_parser.set_defaults(func=self._run_init_job)
         init_jobs_parser.add_argument(type=str, dest='tag')
         init_jobs_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout)
+        init_jobs_parser.set_defaults(func=self._run_job_template_init)
 
         submit_jobs_parser = jobs_subparser.add_parser('create',
                                                        description="create job using 'infile' from init command")
@@ -147,8 +147,8 @@ class ArgParser(object):
     def _run_list_workflow_configurations(self, args):
         self.target_object.workflow_configurations_list()
 
-    def _run_init_job(self, args):
-        self.target_object.init_job(args.tag, args.outfile)
+    def _run_job_template_init(self, args):
+        self.target_object.job_template_init(args.tag, args.outfile)
 
     def _run_create_job(self, args):
         self.target_object.create_job(args.infile, args.dry_run, args.vm_strategy)
