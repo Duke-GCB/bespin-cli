@@ -3,7 +3,7 @@ class UserInputException(Exception):
     pass
 
 
-class IncompleteJobFileException(UserInputException):
+class IncompleteJobTemplateException(UserInputException):
     pass
 
 

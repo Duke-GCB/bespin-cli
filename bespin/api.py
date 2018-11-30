@@ -112,13 +112,12 @@ class BespinApi(object):
     def workflow_configurations_get(self, workflow_configuration_id):
         return self._get_request('/workflow-configurations/{}/'.format(workflow_configuration_id))
 
-    def workflow_configurations_post(self, name, workflow, default_vm_strategy, share_group, system_job_order):
+    def workflow_configurations_post(self, name, workflow, default_vm_strategy, system_job_order):
         url = '/admin/workflow-configurations/'
         data = {
             'name': name,
             'workflow': workflow,
             'default_vm_strategy': default_vm_strategy,
-            'share_group': share_group,
             'system_job_order': system_job_order
         }
         return self._post_request(url, data)
@@ -151,10 +150,10 @@ class BespinApi(object):
         }
         return self._post_request('/dds-job-input-files/', data)
 
-    def init_job_file(self, tag):
-        return self._post_request('/job-templates/init-job-file/', {'workflow_tag': tag})
+    def job_templates_init(self, tag):
+        return self._post_request('/job-templates/init/', {'tag': tag})
 
-    def create_job(self, job_file_payload):
+    def job_templates_create_job(self, job_file_payload):
         return self._post_request('/job-templates/create-job/', job_file_payload)
 
     def authorize_job(self, job_id, token):
@@ -187,23 +186,23 @@ class BespinApi(object):
     def dds_user_credentials_list(self):
         return self._get_request('/dds-user-credentials/')
 
-    def get_share_groups(self, name=None):
+    def share_groups_list(self, name=None):
         url = '/share-groups/'
         if name:
             url += "?name={}".format(name)
         return self._get_request(url)
 
-    def get_share_group(self, share_group_id):
+    def share_group_get(self, share_group_id):
         url = '/share-groups/{}/'.format(share_group_id)
         return self._get_request(url)
 
-    def get_vm_strategies(self, name=None):
+    def vm_strategies_list(self, name=None):
         url = '/vm-strategies/'
         if name:
             url += "?name={}".format(name)
         return self._get_request(url)
 
-    def get_vm_strategy(self, vm_strategy_id):
+    def vm_strategy_get(self, vm_strategy_id):
         url = '/vm-strategies/{}/'.format(vm_strategy_id)
         return self._get_request(url)
 

@@ -97,8 +97,6 @@ class ArgParser(object):
 
         submit_jobs_parser = jobs_subparser.add_parser('create',
                                                        description="create job using 'infile' from init command")
-        submit_jobs_parser.add_argument('--share-group', type=str, required=True,
-                                        help="id of the share group use for this job")
         submit_jobs_parser.add_argument('--vm-strategy', type=str,
                                         help="id of the vm strategy use for this job")
         submit_jobs_parser.add_argument('--dry-run', action='store_true',
@@ -153,7 +151,7 @@ class ArgParser(object):
         self.target_object.init_job(args.tag, args.outfile)
 
     def _run_create_job(self, args):
-        self.target_object.create_job(args.infile, args.dry_run, args.share_group, args.vm_strategy)
+        self.target_object.create_job(args.infile, args.dry_run, args.vm_strategy)
 
     def _run_create_workflow_configuration(self, args):
         self.target_object.create_workflow_configuration(args.name, args.workflow, args.default_vm_strategy,

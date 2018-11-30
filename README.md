@@ -45,7 +45,7 @@ params:
   sequences:
     class: File
     path: dds://TODO_PROJECT_NAME/TODO_FILE_PATH
-workflow_tag: qime2_step1/1/human
+tag: qime2_step1/1/human
 ```
 User will replace all TODO fields with actual values.
 
