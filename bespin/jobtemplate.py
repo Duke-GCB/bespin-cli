@@ -43,12 +43,11 @@ class JobTemplate(object):
     """
     Contains data for creating a job.
     """
-    def __init__(self, tag, name, fund_code, job_order, job_vm_strategy_id=None):
+    def __init__(self, tag, name, fund_code, job_order):
         self.tag = tag
         self.name = name
         self.fund_code = fund_code
         self.job_order = job_order
-        self.job_vm_strategy_id = job_vm_strategy_id
         self.stage_group_id = None
 
     def to_dict(self):
@@ -60,8 +59,6 @@ class JobTemplate(object):
         }
         if self.stage_group_id:
             data['stage_group'] = self.stage_group_id
-        if self.job_vm_strategy_id:
-            data['job_vm_strategy'] = self.job_vm_strategy_id
         return data
 
     def create_user_job_order(self):
@@ -84,7 +81,8 @@ class JobTemplate(object):
         return job_order_details.dds_files
 
     def read_workflow_configuration(self, api):
-        workflow_configurations = api.workflow_configurations_list(tag=self.tag)
+        workflow_tag, version_str, config_tag = self.tag.split('/')
+        workflow_configurations = api.workflow_configurations_list(tag=config_tag, workflow_tag=workflow_tag)
         if workflow_configurations:
             return workflow_configurations[0]
         raise WorkflowConfigurationNotFoundException(
@@ -130,13 +128,12 @@ class JobTemplateLoader(object):
     def __init__(self, infile):
         self.data = yaml.load(infile)
 
-    def create_job_template(self, vm_strategy_id):
+    def create_job_template(self):
         self.validate_job_file_data()
         job_template = JobTemplate(tag=self.data['tag'],
                                    name=self.data['name'],
                                    fund_code=self.data['fund_code'],
-                                   job_order=self.data['job_order'],
-                                   job_vm_strategy_id=vm_strategy_id)
+                                   job_order=self.data['job_order'])
         return job_template
 
     def validate_job_file_data(self):

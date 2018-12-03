@@ -25,3 +25,15 @@ class JobDoesNotExistException(UserInputException):
 
 class WorkflowConfigurationNotFoundException(UserInputException):
     pass
+
+
+class WorkflowNotFound(UserInputException):
+    pass
+
+
+class ShareGroupNotFound(UserInputException):
+    pass
+
+
+class VMStrategyNotFound(UserInputException):
+    pass

@@ -75,14 +75,33 @@ class BespinApi(object):
     def jobs_list(self):
         return self._get_request('/jobs/')
 
-    def workflows_list(self):
-        return self._get_request('/workflows/')
+    def workflows_list(self, tag=None):
+        url = '/workflows/'
+        if tag:
+            url += "?tag={}".format(tag)
+        return self._get_request(url)
 
     def workflow_get(self, workflow_id):
         return self._get_request('/workflows/{}/'.format(workflow_id))
 
-    def workflow_versions_list(self):
-        return self._get_request('/workflow-versions/')
+    def workflow_get_for_tag(self, workflow_tag):
+        workflows = self.workflows_list(workflow_tag)
+        if not workflows:
+            raise WorkflowNotFound("No workflow found with tag {}".format(workflow_tag))
+        return workflows[0]
+
+    def workflow_post(self, name, tag):
+        data = {
+            "name": name,
+            "tag": tag,
+        }
+        return self._post_request('/admin/workflows/', data)
+
+    def workflow_versions_list(self, workflow_tag=None):
+        url = '/workflow-versions/'
+        if workflow_tag:
+            url += '?workflow__tag={}'.format(workflow_tag)
+        return self._get_request(url)
 
     def workflow_versions_post(self, workflow, version_num, description, url, fields):
         data = {
@@ -97,28 +116,31 @@ class BespinApi(object):
     def workflow_version_get(self, workflow_version):
         return self._get_request('/workflow-versions/{}/'.format(workflow_version))
 
-    def workflow_configurations_list(self, workflow_version=None, tag=None):
+    def workflow_configurations_list(self, tag=None, workflow=None, workflow_tag=None):
         url = '/workflow-configurations/'
-        if workflow_version or tag:
-            url += "?"
-            if workflow_version:
-                url += "workflow_version={}".format(workflow_version)
-            if tag:
-                if workflow_version:
-                    url += "&"
-                url += "tag={}".format(tag)
+        prefix = '?'
+        if tag:
+            url += '{}tag={}'.format(prefix, tag)
+            prefix = "&"
+        if workflow:
+            url += '{}workflow={}'.format(prefix, workflow)
+            prefix = "&"
+        if workflow_tag:
+            url += '{}workflow__tag={}'.format(prefix, workflow_tag)
+            prefix = "&"
         return self._get_request(url)
 
     def workflow_configurations_get(self, workflow_configuration_id):
         return self._get_request('/workflow-configurations/{}/'.format(workflow_configuration_id))
 
-    def workflow_configurations_post(self, name, workflow, default_vm_strategy, system_job_order):
+    def workflow_configurations_post(self, tag, workflow, default_vm_strategy, share_group, system_job_order):
         url = '/admin/workflow-configurations/'
         data = {
-            'name': name,
+            'tag': tag,
             'workflow': workflow,
             'default_vm_strategy': default_vm_strategy,
-            'system_job_order': system_job_order
+            'share_group': share_group,
+            'system_job_order': system_job_order,
         }
         return self._post_request(url, data)
 
@@ -196,6 +218,12 @@ class BespinApi(object):
         url = '/share-groups/{}/'.format(share_group_id)
         return self._get_request(url)
 
+    def share_group_get_for_name(self, name):
+        groups = self.share_groups_list(name)
+        if not groups:
+            raise ShareGroupNotFound("No group found with name {}".format(name))
+        return groups[0]
+
     def vm_strategies_list(self, name=None):
         url = '/vm-strategies/'
         if name:
@@ -205,6 +233,12 @@ class BespinApi(object):
     def vm_strategy_get(self, vm_strategy_id):
         url = '/vm-strategies/{}/'.format(vm_strategy_id)
         return self._get_request(url)
+
+    def vm_strategy_get_for_name(self, name):
+        vm_strategies = self.vm_strategies_list(name)
+        if not vm_strategies:
+            raise VMStrategyNotFound("No VM Strategy found with name {}".format(name))
+        return vm_strategies[0]
 
 
 class BespinException(Exception):
