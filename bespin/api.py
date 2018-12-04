@@ -144,17 +144,6 @@ class BespinApi(object):
         }
         return self._post_request(url, data)
 
-    def workflow_configurations_create_job(self, workflow_configuration_id, job_name, fund_code, stage_group,
-                                           user_job_order, job_vm_strategy=None):
-        data = {
-            'job_name': job_name,
-            'fund_code': fund_code,
-            'stage_group': stage_group,
-            'user_job_order': user_job_order,
-            'job_vm_strategy': job_vm_strategy
-        }
-        return self._post_request('/workflow-configurations/{}/create-job/'.format(workflow_configuration_id), data)
-
     def stage_group_post(self):
         return self._post_request('/job-file-stage-groups/', {})
 

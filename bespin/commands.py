@@ -87,12 +87,12 @@ class Commands(object):
     def share_groups_list(self):
         api = self._create_api()
         item_list = ShareGroupsList(api)
-        print(Table(item_list.column_names, item_list.get_column_data()))
+        self._print_details_as_table(item_list)
 
     def vm_configs_list(self):
         api = self._create_api()
         item_list = VmStrategiesList(api)
-        print(Table(item_list.column_names, item_list.get_column_data()))
+        self._print_details_as_table(item_list)
 
     def jobs_list(self):
         """
@@ -100,7 +100,7 @@ class Commands(object):
         """
         api = self._create_api()
         jobs_list = JobsList(api)
-        print(Table(jobs_list.column_names, jobs_list.get_column_data()))
+        self._print_details_as_table(jobs_list)
 
     def job_template_create(self, tag, outfile):
         """
@@ -195,7 +195,6 @@ class Commands(object):
         api = self._create_api()
         api.delete_job(job_id)
         print("Deleted job {}".format(job_id))
-
 
 
 class Table(object):
