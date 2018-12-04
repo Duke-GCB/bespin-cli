@@ -7,20 +7,20 @@ Command line client for Bespin
 ### Find workflow tag
 List workflows:
 ```
-bespin workflows list
+bespin workflow list
 ```
 Output:
 ```
-  Id  Name                          Latest Version Tag
-----  ----------------------------  -------------------------
-   1  QIIME2 Step 1                 qime2_step1/1/human
-   2  QIIME2 Step 2 (DADA2 option)  qime2_step2_dada2/1/human
+bespin workflow list
+  Id  Name                     Job Template Tag
+----  -----------------------  ------------------------------------------
+   1  WES GATK4 Preprocessing  wes-gatk4-preprocessing/v1/b37-human-xgen
 ```
 
 
 ### Init job file
 ```
-bespin jobs init --tag qime2_step1/1/human --outfile job1.yml
+bespin job-template create wes-gatk4-preprocessing/v1/b37-human-xgen --outfile job1.yml
 ```
 Output:
 ```
@@ -32,27 +32,26 @@ Edit this file filling in TODO fields then run `bespin job create job1.yml` .
 ### User edits job file
 Example job file:
 ```
-fund_code: TODO
-name: TODO
-params:
-  barcodes:
-    class: File
-    path: dds://TODO_PROJECT_NAME/TODO_FILE_PATH
-  metadata_barcodes_column: TODO
-  sample_metadata:
-    class: File
-    path: dds://TODO_PROJECT_NAME/TODO_FILE_PATH
-  sequences:
-    class: File
-    path: dds://TODO_PROJECT_NAME/TODO_FILE_PATH
-tag: qime2_step1/1/human
+fund_code: <String Value>
+job_order:
+  library: <String Value>
+  read_pair:
+    name: <String Value>
+    read1_files:
+    - class: File
+      path: dds://<Project Name>/<File Path>
+    read2_files:
+    - class: File
+      path: dds://<Project Name>/<File Path>
+name: <String Value>
+tag: wes-gatk4-preprocessing/v1/b37-human-xgen
 ```
 User will replace all TODO fields with actual values.
 
 
 ### Create job using job file
 ```
-bespin jobs create job1.yml
+bespin job create job1.yml
 ```
 Output:
 ```
@@ -61,18 +60,22 @@ Created job 1
 
 ### Check Status of the job
 ```
-bespin jobs list
+bespin job list
 ```
 Output:
 ```
-bespin jobs list
-  Id  Name    State    Step      Fund Code  Created           Last Updated
-----  ------  -------  ------  -----------  ----------------  ----------------
-   1  My Job  New                       1   2018-06-07 17:00  2018-06-07 17:00
+  Id  Name                      State    Step    Last Updated                   Elapsed Hours  Workflow Version Tag
+----  ------------------------  -------  ------  ---------------------------  ---------------  ---------------------------
+   1  My                        A                2018-11-15T17:02:44.224348Z                0  wes-gatk4-preprocessing/v1   
 ```
 
 ### Start running the job
 Start running a job
 ```
-bespin jobs start 1
+bespin job start 1
+```
+
+### Create and start a job in one step
+```
+bespin job run job1.yml
 ```
