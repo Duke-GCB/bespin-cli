@@ -532,4 +532,3 @@ class JobOrderFileDetailsTestCase(TestCase):
         details.walk(job_order)
 
         self.assertEqual(details.dds_files, expected_dds_file_info)
-
