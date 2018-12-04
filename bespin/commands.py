@@ -288,6 +288,7 @@ class WorkflowConfigurationsList(object):
     WORKFLOW_FIELDNAME = "workflow"
     SHARE_GROUP_FIELDNAME = "share group"
     DEFAULT_VM_STRATEGY_FIELDNAME = "Default VM Strategy"
+
     def __init__(self, api, workflow_tag):
         self.api = api
         self.workflow_tag = workflow_tag

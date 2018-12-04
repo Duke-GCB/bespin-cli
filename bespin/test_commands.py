@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from unittest import TestCase
-from bespin.commands import Commands, Table, ShortWorkflowDetails, FullWorkflowDetails, JobsList
+from bespin.commands import Commands, Table, ShortWorkflowDetails, FullWorkflowDetails, JobsList, \
+    WorkflowVersionsList, WorkflowConfigurationsList, ShareGroupsList, VmStrategiesList
 from mock import patch, call, Mock
 
 
@@ -88,6 +89,25 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.JobTemplateLoader')
     @patch('bespin.commands.print')
+    def test_job_run(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
+        mock_infile = Mock()
+        mock_job_template_loader.return_value.create_job_template.return_value.create_job.return_value = {'job': 1}
+
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.job_run(job_template_infile=mock_infile, token='mytoken')
+
+        mock_job_template_loader.assert_called_with(mock_infile)
+        mock_print.assert_has_calls([
+            call("Created job 1"),
+            call("Set run token for job 1"),
+            call("Started job 1")])
+        mock_job_template = mock_job_template_loader.return_value.create_job_template.return_value
+        mock_job_template.create_job.assert_called_with(mock_bespin_api.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.JobTemplateLoader')
+    @patch('bespin.commands.print')
     def test_job_validate(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
         mock_infile = Mock()
 
@@ -168,7 +188,64 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.print')
-    def test_workflow_configuration_job_order_show(self, mock_print, mock_bespin_api, mock_config_file):
+    def test_workflow_create(self, mock_print, mock_bespin_api, mock_config_file):
+        mock_bespin_api.return_value.workflow_post.return_value = {
+            'id': 4
+        }
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.workflow_create(name='myname', tag='mytag')
+        mock_bespin_api.return_value.workflow_post.assert_called_with('myname', 'mytag')
+        mock_print.assert_has_calls([
+            call("Created workflow 4.")
+        ])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.WorkflowVersionsList')
+    @patch('bespin.commands.Table')
+    @patch('bespin.commands.print')
+    def test_workflow_versions_list(self, mock_print, mock_table, mock_workflow_versions_list, mock_bespin_api,
+                                    mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.workflow_versions_list(workflow_tag='sometag')
+        mock_workflow_versions_list.assert_called_with(mock_bespin_api.return_value, 'sometag')
+        mock_table.assert_called_with(mock_workflow_versions_list.return_value.column_names,
+                                      mock_workflow_versions_list.return_value.get_column_data.return_value)
+        mock_print.assert_called_with(mock_table.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    @patch('bespin.commands.CWLWorkflowVersion')
+    def test_workflow_version_create(self, mock_cwl_workflow_version, mock_print, mock_bespin_api, mock_config_file):
+        mock_cwl_workflow_version.return_value.create.return_value = {
+            'id': 7
+        }
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.workflow_version_create(workflow_tag='exomeseq', url='someurl', description='mydesc', version=1)
+        mock_cwl_workflow_version.assert_called_with('exomeseq', 'someurl', 'mydesc', 1)
+        mock_print.assert_has_calls([
+            call("Created workflow version 7.")
+        ])
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.WorkflowConfigurationsList')
+    @patch('bespin.commands.Table')
+    @patch('bespin.commands.print')
+    def test_workflow_configs_list(self, mock_print, mock_table, mock_workflow_configs_list, mock_bespin_api,
+                                    mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.workflow_configs_list(workflow_tag='sometag')
+        mock_workflow_configs_list.assert_called_with(mock_bespin_api.return_value, 'sometag')
+        mock_table.assert_called_with(mock_workflow_configs_list.return_value.column_names,
+                                      mock_workflow_configs_list.return_value.get_column_data.return_value)
+        mock_print.assert_called_with(mock_table.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    def test_workflow_config_show_job_order(self, mock_print, mock_bespin_api, mock_config_file):
         mock_outfile = Mock()
         mock_bespin_api.return_value.workflow_configurations_list.return_value = [{
             "system_job_order": {
@@ -178,6 +255,58 @@ class CommandsTestCase(TestCase):
         commands = Commands(self.version_str, self.user_agent_str)
         commands.workflow_config_show_job_order(tag="human", workflow_tag="exomeseq", outfile=mock_outfile)
         mock_outfile.write.assert_called_with('threads: 2\n')
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    @patch('bespin.commands.yaml')
+    def test_workflow_config_create(self, mock_yaml, mock_print, mock_bespin_api, mock_config_file):
+        mock_yaml.load.return_value = {
+            'a': 1
+        }
+        mock_bespin_api.return_value.workflow_get_for_tag.return_value = {
+            'id': 2
+        }
+        mock_bespin_api.return_value.vm_strategy_get_for_name.return_value = {
+            'id': 3
+        }
+        mock_bespin_api.return_value.share_group_get_for_name.return_value = {
+            'id': 4
+        }
+        mock_bespin_api.return_value.workflow_configurations_post.return_value = {
+            'id': 5
+        }
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.workflow_config_create(workflow_tag='exome', default_vm_strategy_name='default',
+                                        share_group_name='myname', tag='human', joborder_infile=Mock())
+        mock_bespin_api.return_value.workflow_configurations_post.assert_called_with('human', 2, 3, 4, {'a': 1})
+        mock_print.assert_called_with("Created workflow config 5.")
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.ShareGroupsList')
+    @patch('bespin.commands.Table')
+    @patch('bespin.commands.print')
+    def test_share_groups_list(self, mock_print, mock_table, mock_share_groups_list, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.share_groups_list()
+        mock_share_groups_list.assert_called_with(mock_bespin_api.return_value)
+        mock_table.assert_called_with(mock_share_groups_list.return_value.column_names,
+                                      mock_share_groups_list.return_value.get_column_data.return_value)
+        mock_print.assert_called_with(mock_table.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.VmStrategiesList')
+    @patch('bespin.commands.Table')
+    @patch('bespin.commands.print')
+    def test_vm_configs_list(self, mock_print, mock_table, mock_vm_strategies_list, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        commands.vm_configs_list()
+        mock_vm_strategies_list.assert_called_with(mock_bespin_api.return_value)
+        mock_table.assert_called_with(mock_vm_strategies_list.return_value.column_names,
+                                      mock_vm_strategies_list.return_value.get_column_data.return_value)
+        mock_print.assert_called_with(mock_table.return_value)
 
 
 class TableTestCase(TestCase):
@@ -189,10 +318,6 @@ class TableTestCase(TestCase):
         ])
         self.assertEqual(table.__str__(), mock_tabulate.return_value)
         mock_tabulate.assert_called_with([['A', 'B'], ['C', 'D']], headers=['Col 1', 'Col 2'])
-
-
-class ShortWorkflowDetailsTestCase(TestCase):
-    pass
 
 
 class FullWorkflowDetailsTestCase(TestCase):
@@ -308,3 +433,130 @@ class JobsListTestCase(TestCase):
         self.assertEqual(column_data[0]['elapsed_hours'], 1.2)
         jobs_list.get_workflow_version_tag.assert_called_with(456)
         jobs_list.get_elapsed_hours.assert_called_with(mock_api.jobs_list.return_value[0]['usage'])
+
+
+class ShortWorkflowDetailsTestCase(TestCase):
+    def test_get_column_data(self):
+        mock_api = Mock()
+        mock_api.workflows_list.return_value = [
+            {
+                'id': 1,
+                'name': 'Exome Seq',
+                'tag': 'exome'
+            }
+        ]
+        details = ShortWorkflowDetails(mock_api, tag="exome")
+        self.assertEqual(details.column_names, ["id", "name", "tag"])
+        self.assertEqual(details.get_column_data(), [
+            {'id': 1, 'name': 'Exome Seq', 'tag': 'exome'}
+        ])
+        mock_api.workflows_list.assert_called_with("exome")
+
+
+class WorkflowVersionsListTestCase(TestCase):
+    def test_get_column_data(self):
+        mock_api = Mock()
+        mock_api.workflow_versions_list.return_value = [
+            {
+                'id': 1,
+                'description': 'Exome Seq',
+                'version': 2,
+                'url': 'someurl',
+                'tag': 'mytag',
+                "workflow": 3,
+            }
+        ]
+        mock_api.workflow_get.return_value = {
+            'tag': 'othertag'
+        }
+        details = WorkflowVersionsList(mock_api, workflow_tag='sometag')
+        self.assertEqual(details.column_names, ["id", "description", "workflow tag", "version", "url"])
+        self.assertEqual(details.get_column_data(), [
+            {
+                'description': 'Exome Seq',
+                'id': 1,
+                'tag': 'mytag',
+                'url': 'someurl',
+                'version': 2,
+                'workflow': 3,
+                'workflow tag': 'othertag'
+            }
+        ])
+
+
+class WorkflowConfigurationsListTestCase(TestCase):
+    def test_get_column_data(self):
+        mock_api = Mock()
+        mock_api.workflow_configurations_list.return_value = [
+            {
+                'id': 8,
+                'share_group': 1,
+                'workflow': 2,
+                'default_vm_strategy': 3,
+            }
+        ]
+        mock_api.workflow_get.return_value = {
+            'tag': 'exomeseq'
+        }
+        mock_api.share_group_get.return_value = {
+            'name': 'Informatics'
+        }
+        mock_api.vm_strategy_get.return_value = {
+            'name': 'default'
+        }
+        wfc_list = WorkflowConfigurationsList(mock_api, workflow_tag='mytag')
+        self.assertEqual(wfc_list.column_names, ['id', 'tag', 'workflow', 'share group', 'Default VM Strategy'])
+        self.assertEqual(wfc_list.get_column_data(), [
+            {
+                'Default VM Strategy': 'default',
+                'default_vm_strategy': 3,
+                'id': 8,
+                'share group': 'Informatics',
+                'share_group': 1,
+                'workflow': 'exomeseq'
+            }
+        ])
+
+
+class ShareGroupsListTestCase(TestCase):
+    def test_get_column_data(self):
+        mock_api = Mock()
+        mock_api.share_groups_list.return_value = [
+            {'id': 1, 'name': "GroupName", "email": "com@com.com"}
+        ]
+        sg_list = ShareGroupsList(mock_api)
+        self.assertEqual(sg_list.column_names, ["id", "name", "email"])
+        self.assertEqual(sg_list.get_column_data(), [
+            {'id': 1, 'name': "GroupName", "email": "com@com.com"}
+        ])
+
+
+class VmStrategiesListTestCase(TestCase):
+    def test_get_column_data(self):
+        mock_api = Mock()
+        mock_api.vm_strategies_list.return_value = [
+            {
+                'id': 4,
+                'name': 'default',
+                'volume_size_factor': 2,
+                'volume_size_base': 10,
+                'vm_flavor': {
+                    'name': 'm1.large',
+                    'cpus': 22
+                },
+            }
+        ]
+        vms_list = VmStrategiesList(mock_api)
+        self.assertEqual(vms_list.column_names, ['id', 'name', 'type', 'cpus', 'volume size (g)'])
+        self.assertEqual(vms_list.get_column_data(), [
+            {
+                'cpus': 22,
+                'id': 4,
+                'name': 'default',
+                'type': 'm1.large',
+                'vm_flavor': {'cpus': 22, 'name': 'm1.large'},
+                'volume size (g)': '2 x Input Data Size + 10',
+                'volume_size_base': 10,
+                'volume_size_factor': 2
+            }
+        ])
