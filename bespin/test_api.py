@@ -251,8 +251,11 @@ class BespinApiTestCase(TestCase):
         mock_requests.get.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        items = api.workflow_configurations_list(workflow_version=12, tag='mytag')
-        mock_requests.get.assert_called_with('someurl/workflow-configurations/?workflow_version=12&tag=mytag',
+        items = api.workflow_configurations_list(tag="sometag", workflow=1, workflow_tag="wftag")
+        mock_requests.get.assert_called_with('someurl/workflow-configurations/?'
+                                             'tag=sometag&'
+                                             'workflow=1&'
+                                             'workflow__tag=wftag',
                                              headers=self.expected_headers)
         self.assertEqual(items, ['workflowconfig1'])
 
@@ -275,14 +278,17 @@ class BespinApiTestCase(TestCase):
         mock_requests.post.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        workflow_configuration = api.workflow_configurations_post(name='myconfig', workflow=1, default_vm_strategy=2,
+        workflow_configuration = api.workflow_configurations_post(tag='myconfig', workflow=1,
+                                                                  share_group=2,
+                                                                  default_vm_strategy=3,
                                                                   system_job_order={})
 
         self.assertEqual(workflow_configuration, 'workflowconfiguration1')
         expected_post_payload = {
-            'name': 'myconfig',
+            'tag': 'myconfig',
             'workflow': 1,
-            'default_vm_strategy': 2,
+            'share_group': 2,
+            'default_vm_strategy': 3,
             'system_job_order': {}
         }
         mock_requests.post.assert_called_with('someurl/admin/workflow-configurations/',

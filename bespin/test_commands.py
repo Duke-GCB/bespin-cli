@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from unittest import TestCase
-from bespin.commands import Commands, Table, WorkflowDetails, JobsList
+from bespin.commands import Commands, Table, ShortWorkflowDetails, FullWorkflowDetails, JobsList
 from mock import patch, call, Mock
 
 
@@ -11,33 +11,33 @@ class CommandsTestCase(TestCase):
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
-    @patch('bespin.commands.WorkflowDetails')
+    @patch('bespin.commands.FullWorkflowDetails')
     @patch('bespin.commands.Table')
     @patch('bespin.commands.print')
     def test_workflows_list_latest_versions(self, mock_print, mock_table, mock_workflow_details, mock_bespin_api,
                                             mock_config_file):
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflows_list(all_versions=False)
+        commands.workflows_list(all_versions=False, short_format=False, tag=None)
         workflow_details = mock_workflow_details.return_value
         mock_table.assert_called_with(workflow_details.column_names,
                                       workflow_details.get_column_data.return_value)
         mock_print.assert_called_with(mock_table.return_value)
-        mock_workflow_details.assert_called_with(mock_bespin_api.return_value, False)
+        mock_workflow_details.assert_called_with(mock_bespin_api.return_value, False, None)
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
-    @patch('bespin.commands.WorkflowDetails')
+    @patch('bespin.commands.FullWorkflowDetails')
     @patch('bespin.commands.Table')
     @patch('bespin.commands.print')
     def test_workflows_list_all_versions(self, mock_print, mock_table, mock_workflow_details, mock_bespin_api,
                                          mock_config_file):
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflows_list(all_versions=True)
+        commands.workflows_list(all_versions=True, short_format=False, tag=None)
         workflow_details = mock_workflow_details.return_value
         mock_table.assert_called_with(workflow_details.column_names,
                                       workflow_details.get_column_data.return_value)
         mock_print.assert_called_with(mock_table.return_value)
-        mock_workflow_details.assert_called_with(mock_bespin_api.return_value, True)
+        mock_workflow_details.assert_called_with(mock_bespin_api.return_value, True, None)
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
@@ -56,12 +56,12 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.BespinApi')
     @patch('bespin.jobtemplate.JobConfiguration')
     @patch('bespin.commands.print')
-    def test_init_job(self, mock_print, mock_job_configuration, mock_bespin_api, mock_config_file):
+    def test_job_template_create(self, mock_print, mock_job_configuration, mock_bespin_api, mock_config_file):
         mock_outfile = Mock()
         mock_bespin_api.return_value.job_templates_init.return_value = {}
 
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.job_template_init(tag='rnaseq/v1/human', outfile=mock_outfile)
+        commands.job_template_create(tag='rnaseq/v1/human', outfile=mock_outfile)
 
         mock_bespin_api.return_value.job_templates_init.assert_called_with('rnaseq/v1/human')
         mock_outfile.write.assert_called_with('{}\n')
@@ -70,12 +70,12 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.JobTemplateLoader')
     @patch('bespin.commands.print')
-    def test_create_job(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
+    def test_job_create(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
         mock_infile = Mock()
         mock_job_template_loader.return_value.create_job_template.return_value.create_job.return_value = {'job': 1}
 
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.create_job(infile=mock_infile, dry_run=False)
+        commands.job_create(job_template_infile=mock_infile)
 
         mock_job_template_loader.assert_called_with(mock_infile)
         mock_print.assert_has_calls([
@@ -88,34 +88,16 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.JobTemplateLoader')
     @patch('bespin.commands.print')
-    def test_create_job_dry_run(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
+    def test_job_validate(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
         mock_infile = Mock()
 
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.create_job(infile=mock_infile, dry_run=True)
+        commands.job_validate(job_template_infile=mock_infile)
 
         mock_job_template_loader.assert_called_with(mock_infile)
         mock_job_template = mock_job_template_loader.return_value.create_job_template.return_value
         mock_job_template.verify_job.assert_called_with(mock_bespin_api.return_value)
         mock_print.assert_called_with('Job file is valid.')
-
-    @patch('bespin.commands.ConfigFile')
-    @patch('bespin.commands.BespinApi')
-    @patch('bespin.commands.JobTemplateLoader')
-    @patch('bespin.commands.print')
-    def test_create_job_with_vm_strategy(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
-        mock_infile = Mock()
-        mock_job_template_loader.return_value.create_job_template.return_value.create_job.return_value = {'job': 1}
-
-        commands = Commands(self.version_str, self.user_agent_str)
-        commands.create_job(infile=mock_infile, dry_run=False, vm_strategy=2)
-
-        mock_job_template_loader.assert_called_with(mock_infile)
-        mock_print.assert_has_calls([
-            call("Created job 1"),
-            call("To start this job run `bespin jobs start 1` .")])
-        mock_job_template = mock_job_template_loader.return_value.create_job_template.return_value
-        mock_job_template.create_job.assert_called_with(mock_bespin_api.return_value)
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
@@ -188,13 +170,13 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.print')
     def test_workflow_configuration_job_order_show(self, mock_print, mock_bespin_api, mock_config_file):
         mock_outfile = Mock()
-        mock_bespin_api.return_value.workflow_configurations_get.return_value = {
+        mock_bespin_api.return_value.workflow_configurations_list.return_value = [{
             "system_job_order": {
                 "threads": 2
             }
-        }
+        }]
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflow_configuration_job_order_show(workflow_configuration_id=2, outfile=mock_outfile)
+        commands.workflow_config_show_job_order(tag="human", workflow_tag="exomeseq", outfile=mock_outfile)
         mock_outfile.write.assert_called_with('threads: 2\n')
 
 
@@ -209,7 +191,11 @@ class TableTestCase(TestCase):
         mock_tabulate.assert_called_with([['A', 'B'], ['C', 'D']], headers=['Col 1', 'Col 2'])
 
 
-class WorkflowDetailsTestCase(TestCase):
+class ShortWorkflowDetailsTestCase(TestCase):
+    pass
+
+
+class FullWorkflowDetailsTestCase(TestCase):
     def test_get_column_data(self):
         def make_tag(num):
             return {'tag': 'exome/v{}'.format(num)}
@@ -222,34 +208,34 @@ class WorkflowDetailsTestCase(TestCase):
         mock_api.workflow_configurations_list.return_value = [
             {'tag': 'human'}
         ]
-        details = WorkflowDetails(mock_api, all_versions=False)
+        details = FullWorkflowDetails(mock_api, all_versions=False, tag=None)
         expected_data = [{'id': 1,
-                          'version tag': 'exome/v2/human',
+                          'job template tag': 'exome/v2/human',
                           'tag': 'exome',
                           'name': 'exome',
                           'versions': [1, 2]}]
         column_data = details.get_column_data()
         self.assertEqual(len(column_data), 1)
         self.assertEqual(column_data, expected_data)
-        mock_api.workflow_configurations_list.assert_called_with(workflow_version=2)
+        mock_api.workflow_configurations_list.assert_called_with(workflow_tag='exome')
 
         mock_api.workflow_configurations_list.reset_mock()
         mock_api.workflow_configurations_list.side_effect = [
             [{'tag': 'human'}],
             [{'tag': 'human'}]
         ]
-        details = WorkflowDetails(mock_api, all_versions=True)
+        details = FullWorkflowDetails(mock_api, all_versions=True, tag=None)
         expected_data = [
             {
                 'id': 1,
-                'version tag': 'exome/v1/human',
+                'job template tag': 'exome/v1/human',
                 'name': 'exome',
                 'tag': 'exome',
                 'versions': [1, 2]
             },
             {
                 'id': 1,
-                'version tag': 'exome/v2/human',
+                'job template tag': 'exome/v2/human',
                 'name': 'exome',
                 'tag': 'exome',
                 'versions': [1, 2]
@@ -259,8 +245,8 @@ class WorkflowDetailsTestCase(TestCase):
         self.assertEqual(len(column_data), 2)
         self.assertEqual(column_data, expected_data)
         mock_api.workflow_configurations_list.assert_has_calls([
-            call(workflow_version=1),
-            call(workflow_version=2),
+            call(workflow_tag='exome'),
+            call(workflow_tag='exome'),
         ])
 
     def test_ignores_workflows_without_versions_when_latest(self):
@@ -268,7 +254,7 @@ class WorkflowDetailsTestCase(TestCase):
         mock_api.workflows_list.return_value = [
             {'id': 1, 'name': 'no-versions', 'versions': []},
         ]
-        details = WorkflowDetails(mock_api, all_versions=False)
+        details = FullWorkflowDetails(mock_api, all_versions=False, tag=None)
         column_data = details.get_column_data()
         self.assertEqual(len(column_data), 0)
         mock_api.questionnaires_list.assert_not_called()
@@ -278,7 +264,7 @@ class WorkflowDetailsTestCase(TestCase):
         mock_api.workflows_list.return_value = [
             {'id': 1, 'name': 'no-versions', 'versions': []},
         ]
-        details = WorkflowDetails(mock_api, all_versions=True)
+        details = FullWorkflowDetails(mock_api, all_versions=True, tag=None)
         column_data = details.get_column_data()
         self.assertEqual(len(column_data), 0)
         mock_api.questionnaires_list.assert_not_called()
@@ -288,15 +274,15 @@ class JobsListTestCase(TestCase):
     def test_column_names(self):
         jobs_list = JobsList(api=Mock())
         self.assertEqual(jobs_list.column_names, ["id", "name", "state", "step", "last_updated", "elapsed_hours",
-                                                  "workflow_tag"])
+                                                  "workflow_version_tag"])
 
     def test_get_workflow_tag(self):
         mock_api = Mock()
-        mock_api.workflow_configurations_list.return_value = [{'tag': 'sometag/v1/human'}]
+        mock_api.workflow_version_get.return_value = {'tag': 'sometag/v1'}
         jobs_list = JobsList(api=mock_api)
-        workflow_tag = jobs_list.get_workflow_tag(workflow_version=123)
-        self.assertEqual(workflow_tag, 'sometag/v1/human')
-        mock_api.workflow_configurations_list.assert_called_with(workflow_version=123)
+        workflow_tag = jobs_list.get_workflow_version_tag(workflow_version_id=123)
+        self.assertEqual(workflow_tag, 'sometag/v1')
+        mock_api.workflow_version_get.assert_called_with(123)
 
     def test_get_elapsed_hours(self):
         mock_api = Mock()
@@ -310,15 +296,15 @@ class JobsListTestCase(TestCase):
         mock_api = Mock()
         mock_api.jobs_list.return_value = [{'id': 123, 'workflow_version': 456, 'usage': {'cpu_hours': 1.2}}]
         jobs_list = JobsList(api=mock_api)
-        jobs_list.get_workflow_tag = Mock()
-        jobs_list.get_workflow_tag.return_value = 'sometag/v1/human'
+        jobs_list.get_workflow_version_tag = Mock()
+        jobs_list.get_workflow_version_tag.return_value = 'sometag/v1'
         jobs_list.get_elapsed_hours = Mock()
         jobs_list.get_elapsed_hours.return_value = 1.2
 
         column_data = jobs_list.get_column_data()
         self.assertEqual(len(column_data), 1)
         self.assertEqual(column_data[0]['id'], 123)
-        self.assertEqual(column_data[0]['workflow_tag'], 'sometag/v1/human')
+        self.assertEqual(column_data[0]['workflow_version_tag'], 'sometag/v1')
         self.assertEqual(column_data[0]['elapsed_hours'], 1.2)
-        jobs_list.get_workflow_tag.assert_called_with(456)
+        jobs_list.get_workflow_version_tag.assert_called_with(456)
         jobs_list.get_elapsed_hours.assert_called_with(mock_api.jobs_list.return_value[0]['usage'])

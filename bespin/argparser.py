@@ -64,20 +64,23 @@ class WorkflowCommand(object):
         exclusive_flags.add_argument('--short', action='store_true',
                                   help='show short list of only workflows excluding version/configuration data.')
         list_parser.add_argument('tag', nargs='?', metavar='WORKFLOW_TAG', help='Workflow tag to filter by')
-        list_parser.set_defaults(func=self._run_workflows_list)
+        list_parser.set_defaults(func=self._list)
 
         create_parser = subparsers.add_parser('create', description='create a workflow')
         create_parser.add_argument('--name', required=True,
                                    help='Name to describe the workflow.')
         create_parser.add_argument('--tag', required=True,
                                    help='Unique tag of the workflow.')
-        create_parser.set_defaults(func=self._run_workflow_create)
+        create_parser.set_defaults(func=self._create)
 
-    def _run_workflows_list(self, args):
-        self.target.workflows_list(args.all, args.short, args.tag)
+    def _list(self, args):
+        self.target.workflows_list(all_versions=args.all,
+                                   short_format=args.short,
+                                   tag=args.tag)
 
-    def _run_workflow_create(self, args):
-        self.target.workflow_create(args.name, args.tag)
+    def _create(self, args):
+        self.target.workflow_create(name=args.name,
+                                    tag=args.tag)
 
 
 class WorkflowVersionCommand(object):
@@ -92,7 +95,7 @@ class WorkflowVersionCommand(object):
         list_parser = subparsers.add_parser('list', description='list workflow versions')
         list_parser.add_argument('--workflow', metavar='WORKFLOW_TAG',
                                  help='Filter list based on a workflow tag.')
-        list_parser.set_defaults(func=self._run_list_workflow_versions_list)
+        list_parser.set_defaults(func=self._list)
 
         create_parser = subparsers.add_parser('create', description='create new workflow version')
         create_parser.add_argument('--workflow', metavar='WORKFLOW_TAG', required=True,
@@ -103,13 +106,16 @@ class WorkflowVersionCommand(object):
                                    help='Workflow version description')
         create_parser.add_argument('--version', required=True,
                                    help='Version number or "auto" to automatically determine next version.')
-        create_parser.set_defaults(func=self._run_workflow_version_create)
+        create_parser.set_defaults(func=self._create)
 
-    def _run_list_workflow_versions_list(self, args):
-        self.target.workflow_versions_list(args.workflow)
+    def _list(self, args):
+        self.target.workflow_versions_list(workflow_tag=args.workflow)
 
-    def _run_workflow_version_create(self, args):
-        self.target.workflow_version_create(args.workflow, args.url, args.description, args.version)
+    def _create(self, args):
+        self.target.workflow_version_create(workflow_tag=args.workflow,
+                                            url=args.url,
+                                            description=args.description,
+                                            version=args.version)
 
 
 class WorkflowConfigCommand(object):
@@ -124,17 +130,17 @@ class WorkflowConfigCommand(object):
         list_parser = subparsers.add_parser('list', description='list workflow configurations')
         list_parser.add_argument('--workflow', metavar='TAG',
                                  help='Filter list based on a workflow tag.')
-        list_parser.set_defaults(func=self._run_list_workflow_configs)
+        list_parser.set_defaults(func=self._list)
 
         show_job_order_parser = subparsers.add_parser('show-job-order', description='Prints out job order associated '
                                                                                     'with this configuration')
-        show_job_order_parser.add_argument('--workflow', metavar='WORKFLOW_TAG',
+        show_job_order_parser.add_argument('--workflow', metavar='WORKFLOW_TAG', required=True,
                                            help='Specifies workflow that contains the configuration to be printed.')
-        show_job_order_parser.add_argument('--tag',
+        show_job_order_parser.add_argument('--tag', required=True,
                                            help='Specifies which configuration within a workflow to use.')
         show_job_order_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout,
                                            help='File to write job order into. Prints to stdout if not specified.')
-        show_job_order_parser.set_defaults(func=self._run_show_job_order_workflow_config)
+        show_job_order_parser.set_defaults(func=self._show_job_order)
 
         create_parser = subparsers.add_parser('create', description='create new workflow configuration')
         create_parser.add_argument('--workflow', metavar='WORKFLOW_TAG', required=True,
@@ -146,17 +152,23 @@ class WorkflowConfigCommand(object):
         create_parser.add_argument('--tag', required=True,
                                    help='Tag to assign to this worflow configuration')
         create_parser.add_argument('job_order', type=argparse.FileType('r'), help='job order file')
-        create_parser.set_defaults(func=self._run_workflow_config_create)
+        create_parser.set_defaults(func=self._create)
 
-    def _run_list_workflow_configs(self, args):
-        self.target.workflow_configs_list(args.workflow)
+    def _list(self, args):
+        self.target.workflow_configs_list(workflow_tag=args.workflow)
 
-    def _run_show_job_order_workflow_config(self, args):
-        self.target.workflow_config_show_job_order(args.tag, args.workflow, args.outfile)
+    def _show_job_order(self, args):
+        self.target.workflow_config_show_job_order(tag=args.tag,
+                                                   workflow_tag=args.workflow,
+                                                   outfile=args.outfile)
 
-    def _run_workflow_config_create(self, args):
-        self.target.workflow_config_create(args.workflow, args.default_vm_config, args.share_group, args.tag,
-                                           args.job_order)
+    def _create(self, args):
+        self.target.workflow_config_create(
+            workflow_tag=args.workflow,
+            default_vm_strategy_name=args.default_vm_config,
+            share_group_name=args.share_group,
+            tag=args.tag,
+            joborder_infile=args.job_order)
 
 
 class ShareGroupCommand(object):
@@ -169,10 +181,10 @@ class ShareGroupCommand(object):
 
     def add_actions(self, subparsers):
         list_parser = subparsers.add_parser('list', description='list share groups')
-        list_parser.set_defaults(func=self._run_list_share_groups)
+        list_parser.set_defaults(func=self._list)
 
-    def _run_list_share_groups(self, args):
-        self.target.list_share_groups()
+    def _list(self, args):
+        self.target.share_groups_list()
 
 
 class VMConfigCommand(object):
@@ -185,10 +197,10 @@ class VMConfigCommand(object):
 
     def add_actions(self, subparsers):
         list_parser = subparsers.add_parser('list', description='list VM configurations')
-        list_parser.set_defaults(func=self._run_list_vm_configs)
+        list_parser.set_defaults(func=self._list)
 
-    def _run_list_vm_configs(self, args):
-        self.target.list_vm_configs()
+    def _list(self, args):
+        self.target.vm_configs_list()
 
 
 class JobTemplateCommand(object):
@@ -205,10 +217,10 @@ class JobTemplateCommand(object):
                                    help='Tag that specifies workflow version and config to create job template for')
         create_parser.add_argument('--outfile', type=argparse.FileType('w'), dest='outfile', default=sys.stdout,
                                    help='File to write job template into. Prints to stdout if not specified.')
-        create_parser.set_defaults(func=self._run_create_job_template)
+        create_parser.set_defaults(func=self._create)
 
-    def _run_create_job_template(self, args):
-        self.target.job_template_create(args.tag, args.outfile)
+    def _create(self, args):
+        self.target.job_template_create(tag=args.tag, outfile=args.outfile)
 
 
 class JobCommand(object):
@@ -222,57 +234,57 @@ class JobCommand(object):
     def add_actions(self, subparsers):
         create_parser = subparsers.add_parser('create', description='create a job based on a job template file')
         create_parser.add_argument('job_template', type=argparse.FileType('r'), help='job template file')
-        create_parser.set_defaults(func=self._create_job)
+        create_parser.set_defaults(func=self._create)
 
         run_parser = subparsers.add_parser('run', description='create and start a job based on a job template file')
         run_parser.add_argument('job_template', type=argparse.FileType('r'), help='job template file')
         run_parser.add_argument('--token', type=str, help='Token used to authorize job (if necessary)')
-        run_parser.set_defaults(func=self._run_job)
+        run_parser.set_defaults(func=self._run)
 
         validate_parser = subparsers.add_parser('validate', description='validate a job template file')
         validate_parser.add_argument('job_template', type=argparse.FileType('r'), help='job template file')
-        validate_parser.set_defaults(func=self._validate_job)
+        validate_parser.set_defaults(func=self._validate)
 
         list_parser = subparsers.add_parser('list', description='list jobs')
-        list_parser.set_defaults(func=self._list_jobs)
+        list_parser.set_defaults(func=self._list)
 
         start_parser = subparsers.add_parser('start', description='start job')
         start_parser.add_argument('job_id', type=int)
         start_parser.add_argument('--token', type=str, help='Token used to authorize job (if necessary)')
-        start_parser.set_defaults(func=self._start_job)
+        start_parser.set_defaults(func=self._start)
 
         cancel_parser = subparsers.add_parser('cancel', description='cancel job')
         cancel_parser.add_argument('job_id', type=int)
-        cancel_parser.set_defaults(func=self._cancel_job)
+        cancel_parser.set_defaults(func=self._cancel)
 
         restart_parser = subparsers.add_parser('restart', description='restart job')
         restart_parser.add_argument('job_id', type=int)
-        restart_parser.set_defaults(func=self._restart_job)
+        restart_parser.set_defaults(func=self._restart)
 
         delete_parser = subparsers.add_parser('delete', description='delete job')
         delete_parser.add_argument('job_id', type=int)
-        delete_parser.set_defaults(func=self._delete_job)
+        delete_parser.set_defaults(func=self._delete)
 
-    def _create_job(self, args):
-        self.target.job_create(args.job_template)
+    def _create(self, args):
+        self.target.job_create(job_template_infile=args.job_template)
 
-    def _run_job(self, args):
-        self.target.job_run(args.job_template, args.token)
+    def _run(self, args):
+        self.target.job_run(job_template_infile=args.job_template, token=args.token)
 
-    def _validate_job(self, args):
-        self.target.job_validate(args.job_template)
+    def _validate(self, args):
+        self.target.job_validate(job_template_infile=args.job_template)
 
-    def _list_jobs(self, args):
+    def _list(self, args):
         self.target.jobs_list()
 
-    def _start_job(self, args):
-        self.target.start_job(args.job_id, args.token)
+    def _start(self, args):
+        self.target.start_job(job_id=args.job_id, token=args.token)
 
-    def _cancel_job(self, args):
-        self.target.cancel_job(args.job_id)
+    def _cancel(self, args):
+        self.target.cancel_job(job_id=args.job_id)
 
-    def _restart_job(self, args):
-        self.target.restart_job(args.job_id)
+    def _restart(self, args):
+        self.target.restart_job(job_id=args.job_id)
 
-    def _delete_job(self, args):
-        self.target.delete_job(args.job_id)
+    def _delete(self, args):
+        self.target.delete_job(job_id=args.job_id)

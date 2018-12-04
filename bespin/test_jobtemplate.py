@@ -116,7 +116,7 @@ class JobTemplateTestCase(TestCase):
         mock_api.stage_group_post.return_value = {
             'id': 333
         }
-        job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={
+        job_template = JobTemplate(tag='sometag/v1/human', name='myjob', fund_code='001', job_order={
             'myfile': {
                 'class': 'File',
                 'path': 'dds://project_somepath.txt'
@@ -130,7 +130,7 @@ class JobTemplateTestCase(TestCase):
 
         job_template.create_job(mock_api)
 
-        mock_api.workflow_configurations_list.assert_called_with(tag='sometag')
+        mock_api.workflow_configurations_list.assert_called_with(tag='human', workflow_tag='sometag')
         mock_api.dds_job_input_files_post.assert_called_with(666, 777, 'somepath', 0, 0, 111, stage_group_id=333,
                                                              size=4002)
         mock_api.job_templates_create_job.assert_called_with({
@@ -143,7 +143,7 @@ class JobTemplateTestCase(TestCase):
                 },
                 'myint': 555
             },
-            'tag': 'sometag',
+            'tag': 'sometag/v1/human',
             'stage_group': 333
         })
         mock_dds_file_util.return_value.give_download_permissions.assert_called_with(666, 112)
@@ -169,14 +169,14 @@ class JobTemplateTestCase(TestCase):
             },
             'myint': 555
         }
-        job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order=job_order)
+        job_template = JobTemplate(tag='sometag/v1/human', name='myjob', fund_code='001', job_order=job_order)
         job_template.get_dds_files_details = Mock()
         mock_file = Mock(project_id=666, current_version={'upload': {'size': 4002}})
         mock_file.id = 777
         job_template.get_dds_files_details.return_value = [[mock_file, 'somepath']]
 
         job_template.verify_job(mock_api)
-        mock_api.workflow_configurations_list.assert_called_with(tag='sometag')
+        mock_api.workflow_configurations_list.assert_called_with(tag='human', workflow_tag='sometag')
         job_template.get_dds_files_details.assert_called_with()
         mock_job_order_format_files.return_value.walk.assert_called_with(job_order)
 
@@ -192,13 +192,12 @@ class JobFileLoaderTestCase(TestCase):
         }
         job_template_loader = JobTemplateLoader(Mock())
         job_template_loader.validate_job_file_data = Mock()
-        job_template = job_template_loader.create_job_template(vm_strategy_id=2)
+        job_template = job_template_loader.create_job_template()
 
         self.assertEqual(job_template.name, 'myjob')
         self.assertEqual(job_template.fund_code, '0001')
         self.assertEqual(job_template.job_order, {})
         self.assertEqual(job_template.tag, 'mytag')
-        self.assertEqual(job_template.job_vm_strategy_id, 2)
 
     @patch('bespin.jobtemplate.yaml')
     def test_validate_job_file_data_ok(self, mock_yaml):

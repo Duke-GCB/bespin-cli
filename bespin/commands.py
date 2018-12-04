@@ -52,9 +52,9 @@ class Commands(object):
         api = self._create_api()
         self._print_details_as_table(WorkflowVersionsList(api, workflow_tag))
 
-    def workflow_version_create(self, workflow, url, description, version):
+    def workflow_version_create(self, workflow_tag, url, description, version):
         api = self._create_api()
-        workflow_version = CWLWorkflowVersion(workflow, url, description, version)
+        workflow_version = CWLWorkflowVersion(workflow_tag, url, description, version)
         response = workflow_version.create(api)
         print("Created workflow version {}.".format(response['id']))
 
@@ -84,6 +84,16 @@ class Commands(object):
                                                     joborder)
         print("Created workflow config {}.".format(response['id']))
 
+    def share_groups_list(self):
+        api = self._create_api()
+        item_list = ShareGroupsList(api)
+        print(Table(item_list.column_names, item_list.get_column_data()))
+
+    def vm_configs_list(self):
+        api = self._create_api()
+        item_list = VmStrategiesList(api)
+        print(Table(item_list.column_names, item_list.get_column_data()))
+
     def jobs_list(self):
         """
         Print out a table of current job statuses
@@ -105,28 +115,28 @@ class Commands(object):
             print("Wrote job file {}.".format(outfile.name))
             print("Edit this file filling in TODO fields then run `bespin jobs create {}` .".format(outfile.name))
 
-    def job_create(self, infile):
+    def job_create(self, job_template_infile):
         """
         Create a job based on an input job file (possibly created via init_job_template)
         Prints out job id.
-        :param infile: file: input file to use for creating a job
+        :param job_template_infile: file: input file to use for creating a job
         """
         api = self._create_api()
-        job_template = JobTemplateLoader(infile).create_job_template()
+        job_template = JobTemplateLoader(job_template_infile).create_job_template()
         result = job_template.create_job(api)
         job_id = result['job']
         print("Created job {}".format(job_id))
         print("To start this job run `bespin jobs start {}` .".format(job_id))
 
-    def job_run(self, infile, token=None):
+    def job_run(self, job_template_infile, token=None):
         """
         Creates and starts a job based on an input job file (possibly created via init_job_template)
         Prints out job id.
-        :param infile: file: input file to use for creating a job
+        :param job_template_infile: file: input file to use for creating a job
         :param token: str: token to use to authorize running the job
         """
         api = self._create_api()
-        job_template = JobTemplateLoader(infile).create_job_template()
+        job_template = JobTemplateLoader(job_template_infile).create_job_template()
         result = job_template.create_job(api)
         job_id = result['job']
         print("Created job {}".format(job_id))
@@ -136,13 +146,13 @@ class Commands(object):
         api.start_job(job_id)
         print("Started job {}".format(job_id))
 
-    def job_validate(self, infile):
+    def job_validate(self, job_template_infile):
         """
         Validates a job can be created for the specified job template.
-        :param infile: file: input file to use for creating a job
+        :param job_template_infile: file: input file to use for creating a job
         """
         api = self._create_api()
-        job_template = JobTemplateLoader(infile).create_job_template()
+        job_template = JobTemplateLoader(job_template_infile).create_job_template()
         job_template.verify_job(api)
         print("Job file is valid.")
 
@@ -186,15 +196,6 @@ class Commands(object):
         api.delete_job(job_id)
         print("Deleted job {}".format(job_id))
 
-    def list_share_groups(self):
-        api = self._create_api()
-        item_list = ShareGroupsList(api)
-        print(Table(item_list.column_names, item_list.get_column_data()))
-
-    def list_vm_configs(self):
-        api = self._create_api()
-        item_list = VmStrategiesList(api)
-        print(Table(item_list.column_names, item_list.get_column_data()))
 
 
 class Table(object):
