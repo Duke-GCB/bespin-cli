@@ -4,7 +4,7 @@ Command line client for Bespin
 
 ## Example usage
 
-### Find workflow tag
+### Find job template tag
 List workflows:
 ```
 bespin workflow list
@@ -18,7 +18,7 @@ bespin workflow list
 ```
 
 
-### Init job file
+### Create job template file
 ```
 bespin job-template create wes-gatk4-preprocessing/v1/b37-human-xgen --outfile job1.yml
 ```
@@ -29,7 +29,7 @@ Edit this file filling in TODO fields then run `bespin job create job1.yml` .
 ```
 
 
-### User edits job file
+### User edits job template file
 Example job file:
 ```
 fund_code: <String Value>
@@ -49,7 +49,7 @@ tag: wes-gatk4-preprocessing/v1/b37-human-xgen
 User will replace all TODO fields with actual values.
 
 
-### Create job using job file
+### Create job using job template file
 ```
 bespin job create job1.yml
 ```
