@@ -11,7 +11,6 @@ bespin workflow list
 ```
 Output:
 ```
-bespin workflow list
   Id  Name                     Job Template Tag
 ----  -----------------------  ------------------------------------------
    1  WES GATK4 Preprocessing  wes-gatk4-preprocessing/v1/b37-human-xgen
