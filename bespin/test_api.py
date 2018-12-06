@@ -66,6 +66,55 @@ class BespinApiTestCase(TestCase):
         mock_requests.get.assert_called_with('someurl/workflows/', headers=self.expected_headers)
 
     @patch('bespin.api.requests')
+    def test_workflows_list_with_filter(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['workflow1', 'workflow2']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        workflows = api.workflows_list(tag="mytag")
+
+        self.assertEqual(workflows, ['workflow1', 'workflow2'])
+        mock_requests.get.assert_called_with('someurl/workflows/?tag=mytag', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_workflow_get(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'workflow1'
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        workflow = api.workflow_get('12')
+
+        self.assertEqual(workflow, 'workflow1')
+        mock_requests.get.assert_called_with('someurl/workflows/12/', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_workflow_get_for_tag(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['workflow1']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        workflow = api.workflow_get_for_tag(workflow_tag='exomeseq')
+
+        self.assertEqual(workflow, 'workflow1')
+        mock_requests.get.assert_called_with('someurl/workflows/?tag=exomeseq', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_workflow_post(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'workflow1'
+        mock_requests.post.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        workflow = api.workflow_post(name="myname", tag="mytag")
+
+        self.assertEqual(workflow, 'workflow1')
+        mock_requests.post.assert_called_with('someurl/admin/workflows/', headers=self.expected_headers,
+                                              json={'name': 'myname', 'tag': 'mytag'})
+
+    @patch('bespin.api.requests')
     def test_workflow_versions_list(self, mock_requests):
         mock_response = Mock()
         mock_response.json.return_value = ['workflowversion1', 'workflowversion2']
@@ -78,6 +127,19 @@ class BespinApiTestCase(TestCase):
         mock_requests.get.assert_called_with('someurl/workflow-versions/', headers=self.expected_headers)
 
     @patch('bespin.api.requests')
+    def test_workflow_versions_list_with_filter(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['workflowversion1', 'workflowversion2']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        items = api.workflow_versions_list(workflow_tag='exomeseq')
+
+        self.assertEqual(items, ['workflowversion1', 'workflowversion2'])
+        mock_requests.get.assert_called_with('someurl/workflow-versions/?workflow__tag=exomeseq',
+                                             headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
     def test_workflow_version_get(self, mock_requests):
         mock_response = Mock()
         mock_response.json.return_value = 'workflowversion1'
@@ -88,6 +150,26 @@ class BespinApiTestCase(TestCase):
 
         self.assertEqual(item, 'workflowversion1')
         mock_requests.get.assert_called_with('someurl/workflow-versions/123/', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_workflow_versions_post(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'worflow_version1'
+        mock_requests.post.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        worflow_version = api.workflow_versions_post(workflow=1, version_num=2, description="my desc", url="someurl2",
+                                                 fields=[])
+        self.assertEqual(worflow_version, 'worflow_version1')
+        expected_post_payload = {
+            'workflow': 1,
+            'version': 2,
+            'description': 'my desc',
+            'url': 'someurl2',
+            'fields': []
+        }
+        mock_requests.post.assert_called_with('someurl/admin/workflow-versions/', headers=self.expected_headers,
+                                              json=expected_post_payload)
 
     @patch('bespin.api.requests')
     def test_stage_group_post(self, mock_requests):
@@ -219,30 +301,147 @@ class BespinApiTestCase(TestCase):
         mock_requests.get.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        items = api.workflow_configurations_list(workflow_version=12, tag='mytag')
-        mock_requests.get.assert_called_with('someurl/workflow-configurations/?workflow_version=12&tag=mytag',
+        items = api.workflow_configurations_list(tag="sometag", workflow=1, workflow_tag="wftag")
+        mock_requests.get.assert_called_with('someurl/workflow-configurations/?'
+                                             'tag=sometag&'
+                                             'workflow=1&'
+                                             'workflow__tag=wftag',
                                              headers=self.expected_headers)
         self.assertEqual(items, ['workflowconfig1'])
 
     @patch('bespin.api.requests')
-    def test_workflow_configurations_create_job(self, mock_requests):
+    def test_workflow_configurations_get(self, mock_requests):
         mock_response = Mock()
-        mock_response.json.return_value = ['workflowconfig1']
+        mock_response.json.return_value = 'workflow1'
         mock_requests.get.return_value = mock_response
+
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        item = api.workflow_configurations_create_job(
-            workflow_configuration_id=1,
-            job_name='myjob',
-            fund_code='001',
-            stage_group=1,
-            user_job_order={'threads': 12},
-            job_vm_strategy=2)
-        expected_json = {
-            'job_name': 'myjob',
-            'fund_code': '001',
-            'stage_group': 1,
-            'user_job_order': {'threads': 12},
-            'job_vm_strategy': 2}
-        mock_requests.post.assert_called_with('someurl/workflow-configurations/1/create-job/',
+        workflow = api.workflow_configurations_get('12')
+
+        self.assertEqual(workflow, 'workflow1')
+        mock_requests.get.assert_called_with('someurl/workflow-configurations/12/', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_workflow_configurations_post(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'workflowconfiguration1'
+        mock_requests.post.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        workflow_configuration = api.workflow_configurations_post(tag='myconfig', workflow=1,
+                                                                  share_group=2,
+                                                                  default_vm_strategy=3,
+                                                                  system_job_order={})
+
+        self.assertEqual(workflow_configuration, 'workflowconfiguration1')
+        expected_post_payload = {
+            'tag': 'myconfig',
+            'workflow': 1,
+            'share_group': 2,
+            'default_vm_strategy': 3,
+            'system_job_order': {}
+        }
+        mock_requests.post.assert_called_with('someurl/admin/workflow-configurations/',
                                               headers=self.expected_headers,
-                                              json=expected_json)
+                                              json=expected_post_payload)
+
+    @patch('bespin.api.requests')
+    def test_job_templates_init(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'job_template1'
+        mock_requests.post.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        result = api.job_templates_init(tag="exome/v1/human")
+        self.assertEqual(result, 'job_template1')
+        expected_post_payload = {
+            'tag': 'exome/v1/human'
+        }
+        mock_requests.post.assert_called_with('someurl/job-templates/init/',
+                                              headers=self.expected_headers,
+                                              json=expected_post_payload)
+
+    @patch('bespin.api.requests')
+    def test_job_templates_create_job(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'job_template_filled_in'
+        mock_requests.post.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        result = api.job_templates_create_job(job_file_payload={'a': '1'})
+        self.assertEqual(result, 'job_template_filled_in')
+        mock_requests.post.assert_called_with('someurl/job-templates/create-job/',
+                                              headers=self.expected_headers,
+                                              json={'a': '1'})
+
+    @patch('bespin.api.requests')
+    def test_share_groups_list(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['sharegroup1']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        response = api.share_groups_list(name='somename')
+
+        self.assertEqual(response, ['sharegroup1'])
+        mock_requests.get.assert_called_with('someurl/share-groups/?name=somename', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_share_group_get(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'sharegroup1'
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        response = api.share_group_get(123)
+
+        self.assertEqual(response, 'sharegroup1')
+        mock_requests.get.assert_called_with('someurl/share-groups/123/', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_share_group_get_for_name(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['sharegroup1']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        response = api.share_group_get_for_name(name='myname')
+
+        self.assertEqual(response, 'sharegroup1')
+        mock_requests.get.assert_called_with('someurl/share-groups/?name=myname', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_vm_strategies_list(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['vmstrategy1']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        response = api.vm_strategies_list(name='somename')
+
+        self.assertEqual(response, ['vmstrategy1'])
+        mock_requests.get.assert_called_with('someurl/vm-strategies/?name=somename', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_vm_strategy_get(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = 'vmstrategy1'
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        response = api.vm_strategy_get(123)
+
+        self.assertEqual(response, 'vmstrategy1')
+        mock_requests.get.assert_called_with('someurl/vm-strategies/123/', headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_vm_strategy_get_for_name(self, mock_requests):
+        mock_response = Mock()
+        mock_response.json.return_value = ['vmstrategy1']
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        response = api.vm_strategy_get_for_name(name='myname')
+
+        self.assertEqual(response, 'vmstrategy1')
+        mock_requests.get.assert_called_with('someurl/vm-strategies/?name=myname', headers=self.expected_headers)

@@ -3,7 +3,7 @@ class UserInputException(Exception):
     pass
 
 
-class IncompleteJobFileException(UserInputException):
+class IncompleteJobTemplateException(UserInputException):
     pass
 
 
@@ -24,4 +24,16 @@ class JobDoesNotExistException(UserInputException):
 
 
 class WorkflowConfigurationNotFoundException(UserInputException):
+    pass
+
+
+class WorkflowNotFound(UserInputException):
+    pass
+
+
+class ShareGroupNotFound(UserInputException):
+    pass
+
+
+class VMStrategyNotFound(UserInputException):
     pass
