@@ -113,7 +113,7 @@ class Commands(object):
         outfile.write(yaml.dump(job_file, default_flow_style=False))
         if outfile != sys.stdout:
             print("Wrote job file {}.".format(outfile.name))
-            print("Edit this file filling in TODO fields then run `bespin jobs create {}` .".format(outfile.name))
+            print("Edit this file filling in TODO fields then run `bespin job create {}` .".format(outfile.name))
 
     def job_create(self, job_template_infile):
         """
@@ -126,7 +126,7 @@ class Commands(object):
         result = job_template.create_job(api)
         job_id = result['job']
         print("Created job {}".format(job_id))
-        print("To start this job run `bespin jobs start {}` .".format(job_id))
+        print("To start this job run `bespin job start {}` .".format(job_id))
 
     def job_run(self, job_template_infile, token=None):
         """

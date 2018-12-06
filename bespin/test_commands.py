@@ -81,7 +81,7 @@ class CommandsTestCase(TestCase):
         mock_job_template_loader.assert_called_with(mock_infile)
         mock_print.assert_has_calls([
             call("Created job 1"),
-            call("To start this job run `bespin jobs start 1` .")])
+            call("To start this job run `bespin job start 1` .")])
         mock_job_template = mock_job_template_loader.return_value.create_job_template.return_value
         mock_job_template.create_job.assert_called_with(mock_bespin_api.return_value)
 
