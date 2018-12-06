@@ -14,16 +14,12 @@ class ArgParserTestCase(TestCase):
         self.arg_parser.parse_and_run_commands(["workflow", "list"])
         self.target_object.workflows_list.assert_called_with(all_versions=False, short_format=False, tag=None)
 
-    def test_wf_list_current_versions(self):
-        self.arg_parser.parse_and_run_commands(["wf", "list"])
-        self.target_object.workflows_list.assert_called_with(all_versions=False, short_format=False, tag=None)
-
-    def test_wf_list_all_versions(self):
-        self.arg_parser.parse_and_run_commands(["wf", "list", "--all"])
+    def test_workflow_list_all_versions(self):
+        self.arg_parser.parse_and_run_commands(["workflow", "list", "--all"])
         self.target_object.workflows_list.assert_called_with(all_versions=True, short_format=False, tag=None)
 
-    def test_wf_list_short(self):
-        self.arg_parser.parse_and_run_commands(["wf", "list", "--short"])
+    def test_workflow_list_short(self):
+        self.arg_parser.parse_and_run_commands(["workflow", "list", "--short"])
         self.target_object.workflows_list.assert_called_with(all_versions=False, short_format=True, tag=None)
 
     def test_workflows_create(self):
@@ -32,10 +28,6 @@ class ArgParserTestCase(TestCase):
 
     def test_workflow_versions_list(self):
         self.arg_parser.parse_and_run_commands(["workflow-version", "list"])
-        self.target_object.workflow_versions_list.assert_called_with(workflow_tag=None)
-
-    def test_wfv_versions_list(self):
-        self.arg_parser.parse_and_run_commands(["wfv", "list"])
         self.target_object.workflow_versions_list.assert_called_with(workflow_tag=None)
 
     def test_workflow_versions_list_with_filter(self):
@@ -59,16 +51,12 @@ class ArgParserTestCase(TestCase):
         self.arg_parser.parse_and_run_commands(["workflow-config", "list"])
         self.target_object.workflow_configs_list.assert_called_with(workflow_tag=None)
 
-    def test_wfc_config_list(self):
-        self.arg_parser.parse_and_run_commands(["wfc", "list"])
-        self.target_object.workflow_configs_list.assert_called_with(workflow_tag=None)
-
     def test_workflow_config_list_with_filter(self):
         self.arg_parser.parse_and_run_commands(["workflow-config", "list", "--workflow", "sometag"])
         self.target_object.workflow_configs_list.assert_called_with(workflow_tag="sometag")
 
-    def test_wfc_config_show_job_order(self):
-        self.arg_parser.parse_and_run_commands(["wfc", "show-job-order",
+    def test_workflow_config_config_show_job_order(self):
+        self.arg_parser.parse_and_run_commands(["workflow-config", "show-job-order",
                                                 "--workflow", "sometag",
                                                 "--tag", "mytag"])
         self.target_object.workflow_config_show_job_order.assert_called_with(tag='mytag',
@@ -94,32 +82,16 @@ class ArgParserTestCase(TestCase):
         self.arg_parser.parse_and_run_commands(["share-group", "list"])
         self.target_object.share_groups_list.assert_called_with()
 
-    def test_sg_list(self):
-        self.arg_parser.parse_and_run_commands(["sg", "list"])
-        self.target_object.share_groups_list.assert_called_with()
-
     def test_vm_config_list(self):
         self.arg_parser.parse_and_run_commands(["vm-config", "list"])
-        self.target_object.vm_configs_list.assert_called_with()
-
-    def test_vmc_list(self):
-        self.arg_parser.parse_and_run_commands(["vmc", "list"])
         self.target_object.vm_configs_list.assert_called_with()
 
     def test_job_template_create(self):
         self.arg_parser.parse_and_run_commands(["job-template", "create", "sometag/v1/human"])
         self.target_object.job_template_create.assert_called_with(tag='sometag/v1/human', outfile=sys.stdout)
 
-    def test_job_template_create(self):
-        self.arg_parser.parse_and_run_commands(["jt", "create", "sometag/v1/human"])
-        self.target_object.job_template_create.assert_called_with(tag='sometag/v1/human', outfile=sys.stdout)
-
     def test_job_list(self):
         self.arg_parser.parse_and_run_commands(["job", "list"])
-        self.target_object.jobs_list.assert_called_with()
-
-    def test_j_list(self):
-        self.arg_parser.parse_and_run_commands(["j", "list"])
         self.target_object.jobs_list.assert_called_with()
 
     def test_job_create(self):

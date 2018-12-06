@@ -31,7 +31,6 @@ class ArgParser(object):
     def _add_command(self, command_constructor):
             command = command_constructor(self.target_object)
             command_parser = self.subparsers.add_parser(command.name,
-                                                        aliases=[command.alias],
                                                         description=command.description)
             command_subparsers = command_parser.add_subparsers()
             command.add_actions(command_subparsers)
@@ -50,7 +49,6 @@ class ArgParser(object):
 
 class WorkflowCommand(object):
     name = "workflow"
-    alias = "wf"
     description = "workflow commands"
 
     def __init__(self, target):
@@ -85,7 +83,6 @@ class WorkflowCommand(object):
 
 class WorkflowVersionCommand(object):
     name = "workflow-version"
-    alias = "wfv"
     description = "workflow version commands"
 
     def __init__(self, target):
@@ -120,7 +117,6 @@ class WorkflowVersionCommand(object):
 
 class WorkflowConfigCommand(object):
     name = "workflow-config"
-    alias = "wfc"
     description = "workflow configuration commands"
 
     def __init__(self, target):
@@ -173,7 +169,6 @@ class WorkflowConfigCommand(object):
 
 class ShareGroupCommand(object):
     name = "share-group"
-    alias = "sg"
     description = "share group commands"
 
     def __init__(self, target):
@@ -189,7 +184,6 @@ class ShareGroupCommand(object):
 
 class VMConfigCommand(object):
     name = "vm-config"
-    alias = "vmc"
     description = "VM configuration commands"
 
     def __init__(self, target):
@@ -205,7 +199,6 @@ class VMConfigCommand(object):
 
 class JobTemplateCommand(object):
     name = "job-template"
-    alias = "jt"
     description = "job template commands"
 
     def __init__(self, target):
@@ -225,7 +218,6 @@ class JobTemplateCommand(object):
 
 class JobCommand(object):
     name = "job"
-    alias = "j"
     description = "job commands"
 
     def __init__(self, target):
