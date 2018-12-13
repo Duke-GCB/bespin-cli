@@ -2,9 +2,9 @@ from __future__ import absolute_import
 from unittest import TestCase
 import yaml
 import json
-from bespin.jobtemplate import JobTemplate, JobTemplateLoader, JobOrderWalker, JobOrderFileDetails, \
-    JobOrderFormatFiles
+from bespin.jobtemplate import JobTemplate, JobTemplateLoader, JobOrderWalker, JobOrderFileDetails, JobOrderFormatFiles
 from bespin.exceptions import IncompleteJobTemplateException
+from bespin.dukeds import ProjectDoesNotExistException, FileDoesNotExistException
 from mock import patch, call, Mock
 
 
@@ -89,6 +89,21 @@ class JobTemplateTestCase(TestCase):
                 'class': 'File',
                 'location': 'https://github.com/datafile1.dat'
         }, "URL file paths should not be modified.")
+
+    def test_create_user_job_order_does_not_modify_original(self):
+        job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={
+            'myfile': {
+                'class': 'File',
+                'path': 'dds://project/somepath.txt'
+            }
+        })
+        job_template.create_user_job_order()
+        self.assertEqual(job_template.job_order, {
+            'myfile': {
+                'class': 'File',
+                'path': 'dds://project/somepath.txt',
+            }
+        })
 
     @patch('bespin.jobtemplate.DDSFileUtil')
     def test_get_dds_files_details(self, mock_dds_file_util):

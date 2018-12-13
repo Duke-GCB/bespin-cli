@@ -2,6 +2,7 @@ from bespin.exceptions import WorkflowConfigurationNotFoundException
 from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
 import yaml
+import copy
 
 
 class JobTemplate(object):
@@ -20,7 +21,7 @@ class JobTemplate(object):
         Format job order replacing dds remote file paths with filenames that will be staged
         :return: dict: job order for running CWL
         """
-        user_job_order = self.job_order.copy()
+        user_job_order = copy.deepcopy(self.job_order)
         formatter = JobOrderFormatFiles()
         formatter.walk(user_job_order)
         return user_job_order
