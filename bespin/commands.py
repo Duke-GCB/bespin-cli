@@ -1,12 +1,13 @@
 from __future__ import print_function
 from bespin.config import ConfigFile
-from bespin.api import BespinApi
+from bespin.api import BespinApi, BespinException
 from bespin.workflow import CWLWorkflowVersion
 from bespin.jobtemplate import JobTemplateLoader
 from bespin.exceptions import WorkflowConfigurationNotFoundException
 from tabulate import tabulate
 import yaml
 import sys
+import json
 from decimal import Decimal, ROUND_HALF_UP
 
 
@@ -153,8 +154,15 @@ class Commands(object):
         """
         api = self._create_api()
         job_template = JobTemplateLoader(job_template_infile).create_job_template()
-        job_template.verify_job(api)
-        print("Job file is valid.")
+        try:
+            job_template.validate(api)
+            print("Job file is valid.")
+        except BespinException as ex:
+            print("ERROR: Job template is INVALID.")
+            details = json.loads(str(ex))
+            for key in details:
+                for issue in details[key]:
+                    print("{}: {}".format(key, issue))
 
     def start_job(self, job_id, token=None):
         """

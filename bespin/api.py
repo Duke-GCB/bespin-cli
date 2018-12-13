@@ -164,6 +164,9 @@ class BespinApi(object):
     def job_templates_init(self, tag):
         return self._post_request('/job-templates/init/', {'tag': tag})
 
+    def job_template_validate(self, job_file_payload):
+        return self._post_request('/job-templates/validate/', job_file_payload)
+
     def job_templates_create_job(self, job_file_payload):
         return self._post_request('/job-templates/create-job/', job_file_payload)
 
