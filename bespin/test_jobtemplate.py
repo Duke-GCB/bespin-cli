@@ -5,6 +5,7 @@ import json
 from bespin.jobtemplate import JobTemplate, JobTemplateLoader, JobOrderWalker, JobOrderFileDetails, JobOrderFormatFiles
 from bespin.exceptions import IncompleteJobTemplateException
 from bespin.dukeds import ProjectDoesNotExistException, FileDoesNotExistException
+from bespin.api import BespinException
 from mock import patch, call, Mock
 
 
@@ -204,6 +205,25 @@ class JobTemplateTestCase(TestCase):
         })
         job_template.get_dds_files_details.assert_called_with()
         mock_job_order_format_files.return_value.walk.assert_called_with(job_order)
+
+    def test_validate_flattens_bespin_dict_exception(self):
+        mock_api = Mock()
+        mock_api.job_template_validate.side_effect = BespinException(json.dumps({
+            "field1": ["reason1", "reason2"],
+            "field2": ["reason3"]
+        }))
+        job_template = JobTemplate(tag='sometag/v1/human', name='myjob', fund_code='001', job_order={})
+        with self.assertRaises(IncompleteJobTemplateException) as raised_exception:
+            job_template.validate(mock_api)
+        self.assertEqual(str(raised_exception.exception), 'field1: reason1\nfield1: reason2\nfield2: reason3')
+
+    def test_validate_passes_bespin_str_exception(self):
+        mock_api = Mock()
+        mock_api.job_template_validate.side_effect = BespinException('Something failed')
+        job_template = JobTemplate(tag='sometag/v1/human', name='myjob', fund_code='001', job_order={})
+        with self.assertRaises(IncompleteJobTemplateException) as raised_exception:
+            job_template.validate(mock_api)
+        self.assertEqual(str(raised_exception.exception), 'Something failed')
 
 
 class JobFileLoaderTestCase(TestCase):

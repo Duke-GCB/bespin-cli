@@ -78,12 +78,19 @@ class JobTemplate(object):
             # make sure DukeDS files exist (this takes longer)
             self.get_dds_files_details()
         except BespinException as ex:
+            self.flatten_bespin_exception(ex)
+
+    def flatten_bespin_exception(self, ex):
+        try:
             details = json.loads(str(ex))
-            message = ""
+            issues = []
             for key in details:
-                for issue in details[key]:
-                    message += "{}: {}\n".format(key, issue)
-            raise IncompleteJobTemplateException(message)
+                for problem in details[key]:
+                    issues.append("{}: {}".format(key, problem))
+            message = '\n'.join(issues)
+        except json.JSONDecodeError as e:
+            message = str(ex)
+        raise IncompleteJobTemplateException(message)
 
     def get_formatted_dict(self):
         formatted_job_order = self.create_user_job_order()
