@@ -1,4 +1,4 @@
-from bespin.exceptions import IncompleteJobTemplateException, WorkflowConfigurationNotFoundException
+from bespin.exceptions import WorkflowConfigurationNotFoundException
 from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
 import yaml
@@ -101,7 +101,6 @@ class JobTemplateLoader(object):
                                    fund_code=self.data.get('fund_code'),
                                    job_order=self.data.get('job_order'))
         return job_template
-
 
 
 class JobOrderWalker(object):
