@@ -51,25 +51,28 @@ class JobTemplate(object):
         :param api: BespinApi
         :return: dict: job dictionary returned from bespin api
         """
-        dds_user_credential = api.dds_user_credentials_list()[0]
-        self.read_workflow_configuration(api)
-        stage_group = api.stage_group_post()
-        self.stage_group_id = stage_group['id']
-        dds_project_ids = set()
-        sequence = 0
-        for dds_file, path in self.get_dds_files_details():
-            file_size = dds_file.current_version['upload']['size']
-            api.dds_job_input_files_post(dds_file.project_id, dds_file.id, path, 0, sequence,
-                                         dds_user_credential['id'], stage_group_id=self.stage_group_id,
-                                         size=file_size)
-            sequence += 1
-            dds_project_ids.add(dds_file.project_id)
+        try:
+            dds_user_credential = api.dds_user_credentials_list()[0]
+            self.read_workflow_configuration(api)
+            stage_group = api.stage_group_post()
+            self.stage_group_id = stage_group['id']
+            dds_project_ids = set()
+            sequence = 0
+            for dds_file, path in self.get_dds_files_details():
+                file_size = dds_file.current_version['upload']['size']
+                api.dds_job_input_files_post(dds_file.project_id, dds_file.id, path, 0, sequence,
+                                             dds_user_credential['id'], stage_group_id=self.stage_group_id,
+                                             size=file_size)
+                sequence += 1
+                dds_project_ids.add(dds_file.project_id)
 
-        job = api.job_templates_create_job(self.get_formatted_dict())
-        dds_file_util = DDSFileUtil()
-        for project_id in dds_project_ids:
-            dds_file_util.give_download_permissions(project_id, dds_user_credential['dds_id'])
-        return job
+            job = api.job_templates_create_job(self.get_formatted_dict())
+            dds_file_util = DDSFileUtil()
+            for project_id in dds_project_ids:
+                dds_file_util.give_download_permissions(project_id, dds_user_credential['dds_id'])
+            return job
+        except BespinClientErrorException as ex:
+            self.format_bespin_client_exception(ex)
 
     def validate(self, api):
         try:

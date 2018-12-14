@@ -62,7 +62,7 @@ class BespinApi(object):
         try:
             response.raise_for_status()
         except requests.HTTPError:
-            raise BespinException(message)
+            raise BespinException(BespinApi.make_message_for_http_error(response))
 
     @staticmethod
     def make_message_for_http_error(response):
