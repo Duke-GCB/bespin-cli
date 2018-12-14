@@ -5,7 +5,7 @@ import json
 from bespin.jobtemplate import JobTemplate, JobTemplateLoader, JobOrderWalker, JobOrderFileDetails, JobOrderFormatFiles
 from bespin.exceptions import IncompleteJobTemplateException
 from bespin.dukeds import ProjectDoesNotExistException, FileDoesNotExistException
-from bespin.api import BespinException
+from bespin.api import BespinException, BespinClientErrorException
 from mock import patch, call, Mock
 
 
@@ -208,7 +208,7 @@ class JobTemplateTestCase(TestCase):
 
     def test_validate_flattens_bespin_dict_exception(self):
         mock_api = Mock()
-        mock_api.job_template_validate.side_effect = BespinException(json.dumps({
+        mock_api.job_template_validate.side_effect = BespinClientErrorException(json.dumps({
             "field1": ["reason1", "reason2"],
             "field2": ["reason3"]
         }))
@@ -219,12 +219,19 @@ class JobTemplateTestCase(TestCase):
 
     def test_validate_passes_bespin_str_exception(self):
         mock_api = Mock()
-        mock_api.job_template_validate.side_effect = BespinException('Something failed')
+        mock_api.job_template_validate.side_effect = BespinClientErrorException('Something failed')
         job_template = JobTemplate(tag='sometag/v1/human', name='myjob', fund_code='001', job_order={})
         with self.assertRaises(IncompleteJobTemplateException) as raised_exception:
             job_template.validate(mock_api)
         self.assertEqual(str(raised_exception.exception), 'Something failed')
 
+    def test_validate_raises_general_bespin_exception(self):
+        mock_api = Mock()
+        mock_api.job_template_validate.side_effect = BespinException('Something failed')
+        job_template = JobTemplate(tag='sometag/v1/human', name='myjob', fund_code='001', job_order={})
+        with self.assertRaises(BespinException) as raised_exception:
+            job_template.validate(mock_api)
+        self.assertEqual(str(raised_exception.exception), 'Something failed')
 
 class JobFileLoaderTestCase(TestCase):
     @patch('bespin.jobtemplate.yaml')

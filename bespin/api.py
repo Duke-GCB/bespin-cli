@@ -54,12 +54,15 @@ class BespinApi(object):
 
     @staticmethod
     def _check_response(response):
+
+        if response.status_code == 404:
+            raise NotFoundException(BespinApi.make_message_for_http_error(response))
+        if 400 <= response.status_code < 500:
+            raise BespinClientErrorException(BespinApi.make_message_for_http_error(response))
         try:
-            if response.status_code == 404:
-                raise NotFoundException(BespinApi.make_message_for_http_error(response))
             response.raise_for_status()
         except requests.HTTPError:
-            raise BespinException(BespinApi.make_message_for_http_error(response))
+            raise BespinException(message)
 
     @staticmethod
     def make_message_for_http_error(response):
@@ -234,6 +237,10 @@ class BespinApi(object):
 
 
 class BespinException(Exception):
+    pass
+
+
+class BespinClientErrorException(Exception):
     pass
 
 

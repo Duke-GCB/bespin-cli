@@ -1,7 +1,7 @@
 from bespin.exceptions import WorkflowConfigurationNotFoundException, IncompleteJobTemplateException
 from bespin.dukeds import DDSFileUtil
 from bespin.dukeds import PATH_PREFIX as DUKEDS_PATH_PREFIX
-from bespin.api import BespinApi, BespinException
+from bespin.api import BespinApi, BespinClientErrorException
 import yaml
 import copy
 import json
@@ -77,20 +77,20 @@ class JobTemplate(object):
             api.job_template_validate(self.get_formatted_dict())
             # make sure DukeDS files exist (this takes longer)
             self.get_dds_files_details()
-        except BespinException as ex:
-            self.flatten_bespin_exception(ex)
+        except BespinClientErrorException as ex:
+            self.format_bespin_client_exception(ex)
 
-    def flatten_bespin_exception(self, ex):
+    def format_bespin_client_exception(self, ex):
         try:
             details = json.loads(str(ex))
             issues = []
             for key in details:
                 for problem in details[key]:
                     issues.append("{}: {}".format(key, problem))
-            message = '\n'.join(issues)
-        except json.JSONDecodeError as e:
-            message = str(ex)
-        raise IncompleteJobTemplateException(message)
+            error_message = '\n'.join(issues)
+        except json.JSONDecodeError:
+            error_message = str(ex)
+        raise IncompleteJobTemplateException(error_message)
 
     def get_formatted_dict(self):
         formatted_job_order = self.create_user_job_order()
