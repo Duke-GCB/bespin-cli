@@ -450,6 +450,7 @@ class BespinApiTestCase(TestCase):
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
         mock_response = Mock()
         mock_response.json.return_value = {'field1': ['bad']}
+        mock_response.raise_for_status.side_effect = requests.HTTPError()
 
         mock_response.status_code = 400
         with self.assertRaises(BespinClientErrorException):
@@ -462,6 +463,10 @@ class BespinApiTestCase(TestCase):
         mock_response.status_code = 404
         with self.assertRaises(NotFoundException):
             api._check_response(mock_response)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {}
+        mock_response.raise_for_status.return_value = None
 
         mock_response.status_code = 200
         api._check_response(mock_response)
