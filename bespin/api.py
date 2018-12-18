@@ -55,22 +55,25 @@ class BespinApi(object):
     @staticmethod
     def _check_response(response):
         try:
-            if response.status_code == 404:
-                raise NotFoundException(BespinApi.make_message_for_http_error(response))
             response.raise_for_status()
         except requests.HTTPError:
-            raise BespinException(BespinApi.make_message_for_http_error(response))
+            msg = BespinApi.make_message_for_http_error(response)
+            if response.status_code == 404:
+                raise NotFoundException(msg)
+            elif 400 <= response.status_code < 500:
+                raise BespinClientErrorException(msg)
+            else:
+                raise BespinException(msg)
 
     @staticmethod
     def make_message_for_http_error(response):
-        message = response.text
         try:
             data = response.json()
             if 'detail' in data:
-                message = data['detail']
+                return data['detail']
         except ValueError:
             pass  # response was not JSON
-        return message
+        return response.text
 
     def jobs_list(self):
         return self._get_request('/jobs/')
@@ -164,6 +167,9 @@ class BespinApi(object):
     def job_templates_init(self, tag):
         return self._post_request('/job-templates/init/', {'tag': tag})
 
+    def job_template_validate(self, job_file_payload):
+        return self._post_request('/job-templates/validate/', job_file_payload)
+
     def job_templates_create_job(self, job_file_payload):
         return self._post_request('/job-templates/create-job/', job_file_payload)
 
@@ -231,6 +237,10 @@ class BespinApi(object):
 
 
 class BespinException(Exception):
+    pass
+
+
+class BespinClientErrorException(Exception):
     pass
 
 

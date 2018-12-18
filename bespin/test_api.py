@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from unittest import TestCase
-from bespin.api import BespinApi, BespinException, NotFoundException, requests
+from bespin.api import BespinApi, BespinException, BespinClientErrorException, NotFoundException, requests
 from mock import patch, Mock
 
 
@@ -43,7 +43,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_jobs_list(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['job1', 'job2']
         mock_requests.get.return_value = mock_response
 
@@ -55,7 +55,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflows_list(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['workflow1', 'workflow2']
         mock_requests.get.return_value = mock_response
 
@@ -67,7 +67,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflows_list_with_filter(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['workflow1', 'workflow2']
         mock_requests.get.return_value = mock_response
 
@@ -79,7 +79,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_get(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'workflow1'
         mock_requests.get.return_value = mock_response
 
@@ -91,7 +91,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_get_for_tag(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['workflow1']
         mock_requests.get.return_value = mock_response
 
@@ -103,7 +103,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_post(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'workflow1'
         mock_requests.post.return_value = mock_response
 
@@ -116,7 +116,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_versions_list(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['workflowversion1', 'workflowversion2']
         mock_requests.get.return_value = mock_response
 
@@ -128,7 +128,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_versions_list_with_filter(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['workflowversion1', 'workflowversion2']
         mock_requests.get.return_value = mock_response
 
@@ -141,7 +141,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_version_get(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'workflowversion1'
         mock_requests.get.return_value = mock_response
 
@@ -153,7 +153,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_versions_post(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'worflow_version1'
         mock_requests.post.return_value = mock_response
 
@@ -173,7 +173,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_stage_group_post(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'stagegroup1'
         mock_requests.post.return_value = mock_response
 
@@ -185,7 +185,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_dds_job_input_files_post(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'dds-job-input-file1'
         mock_requests.post.return_value = mock_response
 
@@ -211,7 +211,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_authorize_job(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'job1'
         mock_requests.post.return_value = mock_response
 
@@ -224,7 +224,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_start_job(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'job1'
         mock_requests.post.return_value = mock_response
 
@@ -237,7 +237,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_cancel_job(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'job1'
         mock_requests.post.return_value = mock_response
 
@@ -250,7 +250,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_restart_job(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'job1'
         mock_requests.post.return_value = mock_response
 
@@ -263,7 +263,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_delete_job(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_requests.delete.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
@@ -273,7 +273,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_dds_user_credentials_list(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['agentcred1']
         mock_requests.get.return_value = mock_response
 
@@ -285,7 +285,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_configurations_list_no_filtering(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['workflowconfig1']
         mock_requests.get.return_value = mock_response
 
@@ -296,7 +296,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_configurations_list_with_filtering(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['workflowconfig1']
         mock_requests.get.return_value = mock_response
 
@@ -311,7 +311,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_configurations_get(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'workflow1'
         mock_requests.get.return_value = mock_response
 
@@ -323,7 +323,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_workflow_configurations_post(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'workflowconfiguration1'
         mock_requests.post.return_value = mock_response
 
@@ -347,7 +347,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_job_templates_init(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'job_template1'
         mock_requests.post.return_value = mock_response
 
@@ -363,7 +363,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_job_templates_create_job(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'job_template_filled_in'
         mock_requests.post.return_value = mock_response
 
@@ -376,7 +376,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_share_groups_list(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['sharegroup1']
         mock_requests.get.return_value = mock_response
 
@@ -388,7 +388,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_share_group_get(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'sharegroup1'
         mock_requests.get.return_value = mock_response
 
@@ -400,7 +400,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_share_group_get_for_name(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['sharegroup1']
         mock_requests.get.return_value = mock_response
 
@@ -412,7 +412,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_vm_strategies_list(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['vmstrategy1']
         mock_requests.get.return_value = mock_response
 
@@ -424,7 +424,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_vm_strategy_get(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'vmstrategy1'
         mock_requests.get.return_value = mock_response
 
@@ -436,7 +436,7 @@ class BespinApiTestCase(TestCase):
 
     @patch('bespin.api.requests')
     def test_vm_strategy_get_for_name(self, mock_requests):
-        mock_response = Mock()
+        mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['vmstrategy1']
         mock_requests.get.return_value = mock_response
 
@@ -445,3 +445,31 @@ class BespinApiTestCase(TestCase):
 
         self.assertEqual(response, 'vmstrategy1')
         mock_requests.get.assert_called_with('someurl/vm-strategies/?name=myname', headers=self.expected_headers)
+
+    def test_check_response_raising_exceptions(self):
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        mock_response = Mock()
+        mock_response.json.return_value = {'field1': ['bad']}
+        mock_response.raise_for_status.side_effect = requests.HTTPError()
+
+        mock_response.status_code = 400
+        with self.assertRaises(BespinClientErrorException):
+            api._check_response(mock_response)
+
+        mock_response.status_code = 401
+        with self.assertRaises(BespinClientErrorException):
+            api._check_response(mock_response)
+
+        mock_response.status_code = 404
+        with self.assertRaises(NotFoundException):
+            api._check_response(mock_response)
+
+        mock_response = Mock()
+        mock_response.json.return_value = {}
+        mock_response.raise_for_status.return_value = None
+
+        mock_response.status_code = 200
+        api._check_response(mock_response)
+
+        mock_response.status_code = 201
+        api._check_response(mock_response)

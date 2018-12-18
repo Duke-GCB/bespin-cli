@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from unittest import TestCase
 from bespin.commands import Commands, Table, ShortWorkflowDetails, FullWorkflowDetails, JobsList, \
     WorkflowVersionsList, WorkflowConfigurationsList, ShareGroupsList, VmStrategiesList
+from bespin.exceptions import UserInputException
 from mock import patch, call, Mock
 
 
@@ -55,9 +56,8 @@ class CommandsTestCase(TestCase):
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
-    @patch('bespin.jobtemplate.JobConfiguration')
     @patch('bespin.commands.print')
-    def test_job_template_create(self, mock_print, mock_job_configuration, mock_bespin_api, mock_config_file):
+    def test_job_template_create(self, mock_print, mock_bespin_api, mock_config_file):
         mock_outfile = Mock()
         mock_bespin_api.return_value.job_templates_init.return_value = {}
 
@@ -116,8 +116,23 @@ class CommandsTestCase(TestCase):
 
         mock_job_template_loader.assert_called_with(mock_infile)
         mock_job_template = mock_job_template_loader.return_value.create_job_template.return_value
-        mock_job_template.verify_job.assert_called_with(mock_bespin_api.return_value)
+        mock_job_template.validate.assert_called_with(mock_bespin_api.return_value)
         mock_print.assert_called_with('Job file is valid.')
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.JobTemplateLoader')
+    @patch('bespin.commands.print')
+    def test_job_validate_exception(self, mock_print, mock_job_template_loader, mock_bespin_api, mock_config_file):
+        mock_infile = Mock()
+        mock_job_template = mock_job_template_loader.return_value.create_job_template.return_value
+        mock_job_template.validate.side_effect = UserInputException("Bad data")
+
+        commands = Commands(self.version_str, self.user_agent_str)
+        with self.assertRaises(UserInputException):
+            commands.job_validate(job_template_infile=mock_infile)
+
+        mock_print.assert_called_with('ERROR: Job template is invalid.')
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')

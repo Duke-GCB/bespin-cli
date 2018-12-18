@@ -3,7 +3,7 @@ from bespin.config import ConfigFile
 from bespin.api import BespinApi
 from bespin.workflow import CWLWorkflowVersion
 from bespin.jobtemplate import JobTemplateLoader
-from bespin.exceptions import WorkflowConfigurationNotFoundException
+from bespin.exceptions import WorkflowConfigurationNotFoundException, UserInputException
 from tabulate import tabulate
 import yaml
 import sys
@@ -153,8 +153,12 @@ class Commands(object):
         """
         api = self._create_api()
         job_template = JobTemplateLoader(job_template_infile).create_job_template()
-        job_template.verify_job(api)
-        print("Job file is valid.")
+        try:
+            job_template.validate(api)
+            print("Job file is valid.")
+        except UserInputException:
+            print("ERROR: Job template is invalid.")
+            raise
 
     def start_job(self, job_id, token=None):
         """
