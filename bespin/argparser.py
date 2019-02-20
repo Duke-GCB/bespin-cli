@@ -24,7 +24,7 @@ class ArgParser(object):
         self._add_command(WorkflowVersionCommand)
         self._add_command(WorkflowConfigCommand)
         self._add_command(ShareGroupCommand)
-        self._add_command(VMConfigCommand)
+        self._add_command(JobConfigCommand)
         self._add_command(JobTemplateCommand)
         self._add_command(JobCommand)
 
@@ -141,8 +141,8 @@ class WorkflowConfigCommand(object):
         create_parser = subparsers.add_parser('create', description='create new workflow configuration')
         create_parser.add_argument('--workflow', metavar='WORKFLOW_TAG', required=True,
                                    help='Tag specifying workflow to assign this workflow configuration to')
-        create_parser.add_argument('--default-vm-config', required=True, metavar='VM_CONFIG_NAME',
-                                   help='Name of the default VM configuration to use')
+        create_parser.add_argument('--default-job-config', required=True, metavar='JOB_CONFIG_NAME',
+                                   help='Name of the default job configuration to use')
         create_parser.add_argument('--share-group', required=True, metavar='SHARE_GROUP_NAME',
                                    help='Name of the share group')
         create_parser.add_argument('--tag', required=True,
@@ -161,7 +161,7 @@ class WorkflowConfigCommand(object):
     def _create(self, args):
         self.target.workflow_config_create(
             workflow_tag=args.workflow,
-            default_vm_strategy_name=args.default_vm_config,
+            default_job_strategy_name=args.default_job_config,
             share_group_name=args.share_group,
             tag=args.tag,
             joborder_infile=args.job_order)
@@ -182,9 +182,9 @@ class ShareGroupCommand(object):
         self.target.share_groups_list()
 
 
-class VMConfigCommand(object):
-    name = "vm-config"
-    description = "VM configuration commands"
+class JobConfigCommand(object):
+    name = "job-config"
+    description = "Job configuration commands"
 
     def __init__(self, target):
         self.target = target
@@ -194,7 +194,7 @@ class VMConfigCommand(object):
         list_parser.set_defaults(func=self._list)
 
     def _list(self, args):
-        self.target.vm_configs_list()
+        self.target.job_configs_list()
 
 
 class JobTemplateCommand(object):

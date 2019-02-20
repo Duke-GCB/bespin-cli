@@ -330,7 +330,7 @@ class BespinApiTestCase(TestCase):
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
         workflow_configuration = api.workflow_configurations_post(tag='myconfig', workflow=1,
                                                                   share_group=2,
-                                                                  default_vm_strategy=3,
+                                                                  default_job_strategy=3,
                                                                   system_job_order={})
 
         self.assertEqual(workflow_configuration, 'workflowconfiguration1')
@@ -338,7 +338,7 @@ class BespinApiTestCase(TestCase):
             'tag': 'myconfig',
             'workflow': 1,
             'share_group': 2,
-            'default_vm_strategy': 3,
+            'default_job_strategy': 3,
             'system_job_order': {}
         }
         mock_requests.post.assert_called_with('someurl/admin/workflow-configurations/',
@@ -411,40 +411,40 @@ class BespinApiTestCase(TestCase):
         mock_requests.get.assert_called_with('someurl/share-groups/?name=myname', headers=self.expected_headers)
 
     @patch('bespin.api.requests')
-    def test_vm_strategies_list(self, mock_requests):
+    def test_job_strategies_list(self, mock_requests):
         mock_response = Mock(status_code=200)
-        mock_response.json.return_value = ['vmstrategy1']
+        mock_response.json.return_value = ['jobstrategy1']
         mock_requests.get.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        response = api.vm_strategies_list(name='somename')
+        response = api.job_strategies_list(name='somename')
 
-        self.assertEqual(response, ['vmstrategy1'])
-        mock_requests.get.assert_called_with('someurl/vm-strategies/?name=somename', headers=self.expected_headers)
+        self.assertEqual(response, ['jobstrategy1'])
+        mock_requests.get.assert_called_with('someurl/job-strategies/?name=somename', headers=self.expected_headers)
 
     @patch('bespin.api.requests')
     def test_vm_strategy_get(self, mock_requests):
         mock_response = Mock(status_code=200)
-        mock_response.json.return_value = 'vmstrategy1'
+        mock_response.json.return_value = 'jobstrategy1'
         mock_requests.get.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        response = api.vm_strategy_get(123)
+        response = api.job_strategy_get(123)
 
-        self.assertEqual(response, 'vmstrategy1')
-        mock_requests.get.assert_called_with('someurl/vm-strategies/123/', headers=self.expected_headers)
+        self.assertEqual(response, 'jobstrategy1')
+        mock_requests.get.assert_called_with('someurl/job-strategies/123/', headers=self.expected_headers)
 
     @patch('bespin.api.requests')
     def test_vm_strategy_get_for_name(self, mock_requests):
         mock_response = Mock(status_code=200)
-        mock_response.json.return_value = ['vmstrategy1']
+        mock_response.json.return_value = ['jobstrategy1']
         mock_requests.get.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        response = api.vm_strategy_get_for_name(name='myname')
+        response = api.job_strategy_get_for_name(name='myname')
 
-        self.assertEqual(response, 'vmstrategy1')
-        mock_requests.get.assert_called_with('someurl/vm-strategies/?name=myname', headers=self.expected_headers)
+        self.assertEqual(response, 'jobstrategy1')
+        mock_requests.get.assert_called_with('someurl/job-strategies/?name=myname', headers=self.expected_headers)
 
     def test_check_response_raising_exceptions(self):
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)

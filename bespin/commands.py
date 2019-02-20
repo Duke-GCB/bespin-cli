@@ -71,15 +71,15 @@ class Commands(object):
         config = configs[0]
         outfile.write(yaml.dump(config['system_job_order'], default_flow_style=False))
 
-    def workflow_config_create(self, workflow_tag, default_vm_strategy_name, share_group_name, tag, joborder_infile):
+    def workflow_config_create(self, workflow_tag, default_job_strategy_name, share_group_name, tag, joborder_infile):
         api = self._create_api()
         joborder = yaml.load(joborder_infile)
         workflow = api.workflow_get_for_tag(workflow_tag)
-        default_vm_strategy = api.vm_strategy_get_for_name(default_vm_strategy_name)
+        default_job_strategy = api.job_strategy_get_for_name(default_job_strategy_name)
         share_group = api.share_group_get_for_name(share_group_name)
         response = api.workflow_configurations_post(tag,
                                                     workflow['id'],
-                                                    default_vm_strategy['id'],
+                                                    default_job_strategy['id'],
                                                     share_group['id'],
                                                     joborder)
         print("Created workflow config {}.".format(response['id']))
@@ -89,9 +89,9 @@ class Commands(object):
         item_list = ShareGroupsList(api)
         self._print_details_as_table(item_list)
 
-    def vm_configs_list(self):
+    def job_configs_list(self):
         api = self._create_api()
-        item_list = VmStrategiesList(api)
+        item_list = JobStrategiesList(api)
         self._print_details_as_table(item_list)
 
     def jobs_list(self):
@@ -291,13 +291,13 @@ class WorkflowVersionsList(object):
 class WorkflowConfigurationsList(object):
     WORKFLOW_FIELDNAME = "workflow"
     SHARE_GROUP_FIELDNAME = "share group"
-    DEFAULT_VM_STRATEGY_FIELDNAME = "Default VM Strategy"
+    DEFAULT_JOB_STRATEGY_FIELDNAME = "Default Job Strategy"
 
     def __init__(self, api, workflow_tag):
         self.api = api
         self.workflow_tag = workflow_tag
         self.column_names = ["id", "tag", self.WORKFLOW_FIELDNAME, self.SHARE_GROUP_FIELDNAME,
-                             self.DEFAULT_VM_STRATEGY_FIELDNAME]
+                             self.DEFAULT_JOB_STRATEGY_FIELDNAME]
 
     def get_column_data(self):
         data = []
@@ -311,8 +311,8 @@ class WorkflowConfigurationsList(object):
         item[self.WORKFLOW_FIELDNAME] = workflow['tag']
         share_group = self.api.share_group_get(item['share_group'])
         item[self.SHARE_GROUP_FIELDNAME] = share_group['name']
-        vm_strategy = self.api.vm_strategy_get(item['default_vm_strategy'])
-        item[self.DEFAULT_VM_STRATEGY_FIELDNAME] = vm_strategy['name']
+        job_strategy = self.api.job_strategy_get(item['default_job_strategy'])
+        item[self.DEFAULT_JOB_STRATEGY_FIELDNAME] = job_strategy['name']
 
 
 class JobsList(object):
@@ -361,17 +361,19 @@ class ShareGroupsList(object):
         return data
 
 
-class VmStrategiesList(object):
+class JobStrategiesList(object):
     FLAVOR_NAME_FIELDNAME = "type"
     CPUS_FIELDNAME = "cpus"
+    JOB_MEMORY_FIELDNAME = "memory"
     VOLUME_SIZE_FIELDNAME = "volume size (g)"
     def __init__(self, api):
         self.api = api
-        self.column_names = ["id", "name", self.FLAVOR_NAME_FIELDNAME, self.CPUS_FIELDNAME, self.VOLUME_SIZE_FIELDNAME]
+        self.column_names = ["id", "name", self.FLAVOR_NAME_FIELDNAME, self.CPUS_FIELDNAME, self.JOB_MEMORY_FIELDNAME,
+                             self.VOLUME_SIZE_FIELDNAME]
 
     def get_column_data(self):
         data = []
-        for item in self.api.vm_strategies_list():
+        for item in self.api.job_strategies_list():
             self.add_new_fields(item)
             data.append(item)
         return data
@@ -379,11 +381,13 @@ class VmStrategiesList(object):
     def add_new_fields(self, item):
         volume_size_factor = item['volume_size_factor']
         volume_size_base = item['volume_size_base']
-        vm_flavor_name = item["vm_flavor"]["name"]
-        vm_flavor_cpus = item["vm_flavor"]["cpus"]
+        job_flavor_name = item["job_flavor"]["name"]
+        job_flavor_cpus = item["job_flavor"]["cpus"]
+        job_memory = item["job_flavor"]["memory"]
 
-        item[self.FLAVOR_NAME_FIELDNAME] = vm_flavor_name
-        item[self.CPUS_FIELDNAME] = vm_flavor_cpus
+        item[self.FLAVOR_NAME_FIELDNAME] = job_flavor_name
+        item[self.CPUS_FIELDNAME] = job_flavor_cpus
+        item[self.JOB_MEMORY_FIELDNAME] = job_memory
 
         volume_size_format = "{} x Input Data Size + {}"
         item[self.VOLUME_SIZE_FIELDNAME] = volume_size_format.format(volume_size_factor, volume_size_base)

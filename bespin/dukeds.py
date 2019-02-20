@@ -44,4 +44,4 @@ class DDSFileUtil(object):
 
     def give_download_permissions(self, project_id, dds_user_id):
         self.client.dds_connection.data_service.set_user_project_permission(project_id, dds_user_id,
-                                                                            auth_role='file_downloader')
+                                                                           auth_role='project_admin')

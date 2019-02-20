@@ -67,13 +67,13 @@ class ArgParserTestCase(TestCase):
         with patch("builtins.open", mock_open(read_data="data")) as mock_file:
             self.arg_parser.parse_and_run_commands(["workflow-config", "create",
                                                     "--workflow", "sometag",
-                                                    "--default-vm-config", "default2",
+                                                    "--default-job-config", "default2",
                                                     "--share-group", "informatics",
                                                     "--tag", "newtag",
                                                     "job_order.json"])
         self.target_object.workflow_config_create.assert_called_with(
             workflow_tag='sometag',
-            default_vm_strategy_name='default2',
+            default_job_strategy_name='default2',
             share_group_name='informatics',
             tag='newtag',
             joborder_infile=ANY)
@@ -82,9 +82,9 @@ class ArgParserTestCase(TestCase):
         self.arg_parser.parse_and_run_commands(["share-group", "list"])
         self.target_object.share_groups_list.assert_called_with()
 
-    def test_vm_config_list(self):
-        self.arg_parser.parse_and_run_commands(["vm-config", "list"])
-        self.target_object.vm_configs_list.assert_called_with()
+    def test_job_config_list(self):
+        self.arg_parser.parse_and_run_commands(["job-config", "list"])
+        self.target_object.job_configs_list.assert_called_with()
 
     def test_job_template_create(self):
         self.arg_parser.parse_and_run_commands(["job-template", "create", "sometag/v1/human"])

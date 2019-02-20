@@ -59,7 +59,7 @@ class DDSFileUtilTestCase(TestCase):
         util = DDSFileUtil()
         util.give_download_permissions(project_id='123', dds_user_id='456')
         util.client.dds_connection.data_service.set_user_project_permission.assert_called_with(
-            '123', '456', auth_role='file_downloader')
+            '123', '456', auth_role='project_admin')
 
     def test_get_project_name_and_file_path(self):
         project_name, file_path = DDSFileUtil.get_project_name_and_file_path('dds://mouse/somedir/data.txt')

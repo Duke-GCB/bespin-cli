@@ -1,5 +1,5 @@
 import requests
-from bespin.exceptions import JobDoesNotExistException
+from bespin.exceptions import JobDoesNotExistException, ShareGroupNotFound, JobStrategyNotFound, WorkflowNotFound
 
 CONTENT_TYPE = 'application/json'
 
@@ -136,12 +136,12 @@ class BespinApi(object):
     def workflow_configurations_get(self, workflow_configuration_id):
         return self._get_request('/workflow-configurations/{}/'.format(workflow_configuration_id))
 
-    def workflow_configurations_post(self, tag, workflow, default_vm_strategy, share_group, system_job_order):
+    def workflow_configurations_post(self, tag, workflow, default_job_strategy, share_group, system_job_order):
         url = '/admin/workflow-configurations/'
         data = {
             'tag': tag,
             'workflow': workflow,
-            'default_vm_strategy': default_vm_strategy,
+            'default_job_strategy': default_job_strategy,
             'share_group': share_group,
             'system_job_order': system_job_order,
         }
@@ -219,21 +219,21 @@ class BespinApi(object):
             raise ShareGroupNotFound("No group found with name {}".format(name))
         return groups[0]
 
-    def vm_strategies_list(self, name=None):
-        url = '/vm-strategies/'
+    def job_strategies_list(self, name=None):
+        url = '/job-strategies/'
         if name:
             url += "?name={}".format(name)
         return self._get_request(url)
 
-    def vm_strategy_get(self, vm_strategy_id):
-        url = '/vm-strategies/{}/'.format(vm_strategy_id)
+    def job_strategy_get(self, job_strategy_id):
+        url = '/job-strategies/{}/'.format(job_strategy_id)
         return self._get_request(url)
 
-    def vm_strategy_get_for_name(self, name):
-        vm_strategies = self.vm_strategies_list(name)
-        if not vm_strategies:
-            raise VMStrategyNotFound("No VM Strategy found with name {}".format(name))
-        return vm_strategies[0]
+    def job_strategy_get_for_name(self, name):
+        job_strategies = self.job_strategies_list(name)
+        if not job_strategies:
+            raise JobStrategyNotFound("No Job Strategy found with name {}".format(name))
+        return job_strategies[0]
 
 
 class BespinException(Exception):
