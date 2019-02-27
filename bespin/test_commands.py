@@ -546,7 +546,7 @@ class ShareGroupsListTestCase(TestCase):
         ])
 
 
-class VmStrategiesListTestCase(TestCase):
+class JobStrategiesListTestCase(TestCase):
     def test_get_column_data(self):
         mock_api = Mock()
         mock_api.job_strategies_list.return_value = [
