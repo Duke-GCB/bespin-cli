@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from unittest import TestCase
 from bespin.commands import Commands, Table, ShortWorkflowDetails, FullWorkflowDetails, JobsList, \
-    WorkflowVersionsList, WorkflowConfigurationsList, ShareGroupsList, VmStrategiesList
+    WorkflowVersionsList, WorkflowConfigurationsList, ShareGroupsList, JobStrategiesList
 from bespin.exceptions import UserInputException
 from mock import patch, call, Mock
 
@@ -282,7 +282,7 @@ class CommandsTestCase(TestCase):
         mock_bespin_api.return_value.workflow_get_for_tag.return_value = {
             'id': 2
         }
-        mock_bespin_api.return_value.vm_strategy_get_for_name.return_value = {
+        mock_bespin_api.return_value.job_strategy_get_for_name.return_value = {
             'id': 3
         }
         mock_bespin_api.return_value.share_group_get_for_name.return_value = {
@@ -292,7 +292,7 @@ class CommandsTestCase(TestCase):
             'id': 5
         }
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflow_config_create(workflow_tag='exome', default_vm_strategy_name='default',
+        commands.workflow_config_create(workflow_tag='exome', default_job_strategy_name='default',
                                         share_group_name='myname', tag='human', joborder_infile=Mock())
         mock_bespin_api.return_value.workflow_configurations_post.assert_called_with('human', 2, 3, 4, {'a': 1})
         mock_print.assert_called_with("Created workflow config 5.")
@@ -312,15 +312,15 @@ class CommandsTestCase(TestCase):
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
-    @patch('bespin.commands.VmStrategiesList')
+    @patch('bespin.commands.JobStrategiesList')
     @patch('bespin.commands.Table')
     @patch('bespin.commands.print')
-    def test_vm_configs_list(self, mock_print, mock_table, mock_vm_strategies_list, mock_bespin_api, mock_config_file):
+    def test_job_configs_list(self, mock_print, mock_table, mock_job_strategies_list, mock_bespin_api, mock_config_file):
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.vm_configs_list()
-        mock_vm_strategies_list.assert_called_with(mock_bespin_api.return_value)
-        mock_table.assert_called_with(mock_vm_strategies_list.return_value.column_names,
-                                      mock_vm_strategies_list.return_value.get_column_data.return_value)
+        commands.job_configs_list()
+        mock_job_strategies_list.assert_called_with(mock_bespin_api.return_value)
+        mock_table.assert_called_with(mock_job_strategies_list.return_value.column_names,
+                                      mock_job_strategies_list.return_value.get_column_data.return_value)
         mock_print.assert_called_with(mock_table.return_value)
 
 
@@ -507,7 +507,7 @@ class WorkflowConfigurationsListTestCase(TestCase):
                 'id': 8,
                 'share_group': 1,
                 'workflow': 2,
-                'default_vm_strategy': 3,
+                'default_job_strategy': 3,
             }
         ]
         mock_api.workflow_get.return_value = {
@@ -516,15 +516,15 @@ class WorkflowConfigurationsListTestCase(TestCase):
         mock_api.share_group_get.return_value = {
             'name': 'Informatics'
         }
-        mock_api.vm_strategy_get.return_value = {
+        mock_api.job_strategy_get.return_value = {
             'name': 'default'
         }
         wfc_list = WorkflowConfigurationsList(mock_api, workflow_tag='mytag')
-        self.assertEqual(wfc_list.column_names, ['id', 'tag', 'workflow', 'share group', 'Default VM Strategy'])
+        self.assertEqual(wfc_list.column_names, ['id', 'tag', 'workflow', 'share group', 'Default Job Strategy'])
         self.assertEqual(wfc_list.get_column_data(), [
             {
-                'Default VM Strategy': 'default',
-                'default_vm_strategy': 3,
+                'Default Job Strategy': 'default',
+                'default_job_strategy': 3,
                 'id': 8,
                 'share group': 'Informatics',
                 'share_group': 1,
@@ -546,30 +546,32 @@ class ShareGroupsListTestCase(TestCase):
         ])
 
 
-class VmStrategiesListTestCase(TestCase):
+class JobStrategiesListTestCase(TestCase):
     def test_get_column_data(self):
         mock_api = Mock()
-        mock_api.vm_strategies_list.return_value = [
+        mock_api.job_strategies_list.return_value = [
             {
                 'id': 4,
                 'name': 'default',
                 'volume_size_factor': 2,
                 'volume_size_base': 10,
-                'vm_flavor': {
+                'job_flavor': {
                     'name': 'm1.large',
-                    'cpus': 22
+                    'cpus': 22,
+                    'memory': '1MB',
                 },
             }
         ]
-        vms_list = VmStrategiesList(mock_api)
-        self.assertEqual(vms_list.column_names, ['id', 'name', 'type', 'cpus', 'volume size (g)'])
-        self.assertEqual(vms_list.get_column_data(), [
+        job_strategies_list = JobStrategiesList(mock_api)
+        self.assertEqual(job_strategies_list.column_names, ['id', 'name', 'type', 'cpus', 'memory', 'volume size (g)'])
+        self.assertEqual(job_strategies_list.get_column_data(), [
             {
                 'cpus': 22,
+                'memory': '1MB',
                 'id': 4,
                 'name': 'default',
                 'type': 'm1.large',
-                'vm_flavor': {'cpus': 22, 'name': 'm1.large'},
+                'job_flavor': {'cpus': 22, 'name': 'm1.large', 'memory': '1MB'},
                 'volume size (g)': '2 x Input Data Size + 10',
                 'volume_size_base': 10,
                 'volume_size_factor': 2

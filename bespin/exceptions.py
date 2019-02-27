@@ -35,5 +35,5 @@ class ShareGroupNotFound(UserInputException):
     pass
 
 
-class VMStrategyNotFound(UserInputException):
+class JobStrategyNotFound(UserInputException):
     pass
