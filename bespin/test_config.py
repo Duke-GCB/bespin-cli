@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from unittest import TestCase
 from bespin.config import ConfigFile, Config, ConfigSetupAbandoned, DEFAULT_BESPIN_URL
 from mock import patch, Mock, mock_open
-
+import yaml
 
 class ConfigFileTestCase(TestCase):
     @patch('bespin.config.os')
@@ -50,7 +50,7 @@ class ConfigFileTestCase(TestCase):
             config_file.write_config(config)
         write_call_args = mocked_open.return_value.write.call_args_list
         write_strs = ''.join([acall[0][0] for acall in write_call_args])
-        self.assertEqual('{token: Secret, url: someurl}', write_strs.strip())
+        self.assertEqual({"token": "Secret", "url": "someurl"}, yaml.safe_load(write_strs))
 
     def test_prompt_user_for_token(self):
         config_file = ConfigFile(filename='/tmp/test.yml')
