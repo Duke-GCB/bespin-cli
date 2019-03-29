@@ -7,16 +7,21 @@ from cwltool.resolver import tool_resolver
 import re
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
+log.setLevel(logging.WARN)
 log.addHandler(logging.StreamHandler())
 
+messages = []
+errors = []
+
+class ValidationError(Exception):
+  pass
 
 def disable_cwl_logs():
   logging.getLogger("cwltool").setLevel(logging.ERROR)
   logging.getLogger("rdflib.term").setLevel(logging.ERROR)
 
 def load_cwl(filename_or_url):
-  log.info('Loading {}'.format(filename_or_url))
+  messages.append('Loading {}'.format(filename_or_url))
   disable_cwl_logs()
   context = LoadingContext({"construct_tool_object": default_make_tool,
                             "resolver": tool_resolver,
@@ -26,25 +31,25 @@ def load_cwl(filename_or_url):
 
 def check_field_exists(cwl, name):
   if name in cwl.tool:
-    log.info('Field \'{}\' exists'.format(name))
+    messages.append('Field \'{}\' exists'.format(name))
   else:
-    log.error('Field \'{}\' was not found in your CWL file'.format(name))
+    errors.append('Field \'{}\' was not found in your CWL file'.format(name))
 
 def check_field_value(cwl, name, value):
   check_field_exists(cwl, name)
   if cwl.tool.get(name) == value:
-    log.info('Field \'{}\' has required value \'{}\''.format(name, value))
+    messages.append('Field \'{}\' has required value \'{}\''.format(name, value))
   else:
-    log.error('Field \'{}\' must have a value of \'{}\''.format(name, value))
+    errors.append('Field \'{}\' must have a value of \'{}\''.format(name, value))
 
 def check_field_pattern(cwl, name, pattern):
   check_field_exists(cwl, name)
   field_value = cwl.tool.get(name)
   matched = re.search(pattern, field_value)
   if matched:
-    log.info('Field \'{}\' has required pattern \'{}\''.format(name, pattern))
+    messages.append('Field \'{}\' has required pattern \'{}\''.format(name, pattern))
   else:
-    log.error('Field \'{}\' must have a pattern \'{}\''.format(name, pattern))
+    errors.append('Field \'{}\' must have a pattern \'{}\''.format(name, pattern))
 
 def validate_workflow(expected_version, filename):
   cwl = load_cwl(filename)
@@ -61,4 +66,13 @@ def validate_workflow(expected_version, filename):
 
 if __name__ == '__main__':
   expected_version, filename = sys.argv[1:3]
+  print('Validating {} as {}'.format(filename, expected_version))
   validate_workflow(expected_version, filename)
+  for m in messages:
+    log.info(m)
+  for e in errors:
+    log.error(e)
+  if errors:
+    raise ValidationError('\n'.join(errors))
+  else:
+    print('Success: {} has required fields as {}'.format(filename, expected_version))
