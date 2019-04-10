@@ -75,7 +75,7 @@ def create_workflow_version(url, workflow_type, path, version_info_url, version)
 
 
 
-for workflow in workflows[-1:]:
+for workflow in workflows:
     create_workflow(workflow['name'], workflow['tag'])
     for version in workflow['versions']:
         create_workflow_version(version['url'], version['type'], version['path'], version['info_url'], version['version'])
