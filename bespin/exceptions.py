@@ -31,6 +31,10 @@ class WorkflowNotFound(UserInputException):
     pass
 
 
+class InvalidWorkflowFileException(UserInputException):
+    pass
+
+
 class ShareGroupNotFound(UserInputException):
     pass
 

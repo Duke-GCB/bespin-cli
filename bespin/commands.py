@@ -52,9 +52,10 @@ class Commands(object):
         api = self._create_api()
         self._print_details_as_table(WorkflowVersionsList(api, workflow_tag))
 
-    def workflow_version_create(self, workflow_tag, url, description, version):
+    def workflow_version_create(self, url, workflow_type, workflow_path, version_info_url):
         api = self._create_api()
-        workflow_version = CWLWorkflowVersion(workflow_tag, url, description, version)
+        # def __init__(self, url, workflow_type, workflow_path, version_info_url):
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, version_info_url)
         response = workflow_version.create(api)
         print("Created workflow version {}.".format(response['id']))
 

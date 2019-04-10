@@ -106,12 +106,15 @@ class BespinApi(object):
             url += '?workflow__tag={}'.format(workflow_tag)
         return self._get_request(url)
 
-    def workflow_versions_post(self, workflow, version_num, description, url, fields):
+    def workflow_versions_post(self, workflow, version, workflow_type, description, workflow_path, url, version_info_url, fields):
         data = {
             "workflow": workflow,
-            "version": version_num,
+            "version": version,
+            "type": workflow_type,
+            "workflow_path": workflow_path,
             "description": description,
             "url": url,
+            "version_info_url": version_info_url,
             "fields": fields
         }
         return self._post_request('/admin/workflow-versions/', data)

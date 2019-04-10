@@ -64,8 +64,7 @@ def validate_workflow(expected_version, filename):
   doc_pattern = expected_version
   check_field_pattern(cwl, 'doc', doc_pattern)
 
-if __name__ == '__main__':
-  expected_version, filename = sys.argv[1:3]
+def main(expected_version, filename):
   print('Validating {} as {}'.format(filename, expected_version))
   validate_workflow(expected_version, filename)
   for m in messages:
@@ -76,3 +75,7 @@ if __name__ == '__main__':
     raise ValidationError('\n'.join(errors))
   else:
     print('Success: {} has required fields as {}'.format(filename, expected_version))
+
+if __name__ == '__main__':
+  expected_version, filename = sys.argv[1:3]
+  main(expected_version, filename)
