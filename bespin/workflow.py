@@ -148,8 +148,10 @@ class CWLWorkflowParser(object):
         self.extract_description()
 
     def extract_input_fields(self):
-        # TODO: may need to upconvert these to list of dicts if not a packed workflow.
-        self.input_fields = self.loaded_workflow.tool.get('inputs')
+        # Using inputs_record_schema['fields'] here as that has type dictionaries
+        # (e.g {'name': 'input_file', 'type': 'File'}) and no fragments/references based on local
+        # file paths.
+        self.input_fields = self.loaded_workflow.inputs_record_schema.get('fields')
 
     def extract_version_and_tag(self):
         label = self.loaded_workflow.tool.get('label', '')
