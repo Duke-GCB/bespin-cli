@@ -13,7 +13,7 @@ import zipfile
 import os
 import re
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('bespin-cli')
 
 
 class CWLWorkflowLoader(object):
@@ -109,18 +109,15 @@ class BespinWorkflowValidator(object):
         else:
             self.add_error('Field \'{}\' must have a pattern \'{}\''.format(name, pattern))
 
-    def validate(self, expected_version):
+    def validate(self, expected_tag, expected_version):
         # Verify it's a workflow
         self.check_field_value('class', 'Workflow')
         # Verify cwl version
         self.check_field_value('cwlVersion', 'v1.0')
-        # for the label field, pattern must be <tag>/<version>
-        # TODO: Ensure the tag is here too
-        label_pattern = '\S.*/{}$'.format(expected_version)  # No spaces and ends with /version
-        self.check_field_pattern('label', label_pattern)
+        # for the label field, pattern shall be <tag>/<version>
+        self.check_field_value('label', '{}/{}'.format(expected_tag, expected_version))
         # For the doc field, just verify the version string exists somewhere
-        doc_pattern = expected_version
-        self.check_field_pattern('doc', doc_pattern)
+        self.check_field_pattern('doc', expected_version)
 
     def report(self, raise_on_errors):
         for m in self.messages:
@@ -172,12 +169,17 @@ class CWLWorkflowVersion(object):
         self.workflow_path = workflow_path
         self.version_info_url = version_info_url
 
+    def should_validate(self):
+        # Do not validate packed workflows since they pre-date our standards
+        return self.workflow_type != CWLWorkflowLoader.TYPE_PACKED
+
     def load_and_parse_workflow(self):
         loaded = CWLWorkflowLoader(self).load()
         parser = CWLWorkflowParser(loaded)
-        validator = BespinWorkflowValidator(loaded)
-        validator.validate(parser.version)
-        validator.report(raise_on_errors=True)
+        if self.should_validate():
+            validator = BespinWorkflowValidator(loaded)
+            validator.validate(parser.tag, parser.version)
+            validator.report(raise_on_errors=True)
         return parser
 
     def create(self, api):
