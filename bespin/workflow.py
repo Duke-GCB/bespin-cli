@@ -163,14 +163,25 @@ class CWLWorkflowParser(object):
         doc = self.loaded_workflow.tool.get('doc', '')
         self.description = doc
 
+    def check_required_fields(self):
+        if self.tag is None or self.version is None:
+            raise InvalidWorkflowFileException('Unable to extract workflow tag and version. '
+                                               'Please make sure workflow has a label field in the '
+                                               'format \'tag/version\' (e.g. label: exomeseq-gatk4/v1.0.0)')
+        if not self.description:
+            raise InvalidWorkflowFileException('Unable to extract description. Please make sure workflow '
+                                               'has a long description in the doc field '
+                                               '(e.g. doc: Whole Exome Sequence analysis using GATK 4 - v1.0.0')
+
 
 class CWLWorkflowVersion(object):
-    def __init__(self, url, workflow_type, workflow_path, version_info_url, override_version=None, validate=True):
+    def __init__(self, url, workflow_type, workflow_path, version_info_url, override_version=None, override_tag=None, validate=True):
         self.url = url
         self.workflow_type = workflow_type
         self.workflow_path = workflow_path
         self.version_info_url = version_info_url
         self.override_version = override_version
+        self.override_tag = override_tag
         self.validate = validate
 
     def load_and_parse_workflow(self):
@@ -184,10 +195,15 @@ class CWLWorkflowVersion(object):
             if parser.version is not None:
                 log.warning('Overriding parsed version {} to {}'.format(parser.version, self.override_version))
             parser.version = self.override_version
+        if self.override_tag:
+            if parser.tag is not None:
+                log.warning('Overriding parsed tag {} to {}'.format(parser.tag, self.override_tag))
+            parser.tag = self.override_tag
         return parser
 
     def create(self, api):
         parser = self.load_and_parse_workflow()
+        parser.check_required_fields()
         workflow_id = self.get_workflow_id(api, parser.tag)
         return api.workflow_versions_post(
             workflow=workflow_id,
