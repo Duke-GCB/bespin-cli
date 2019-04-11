@@ -16,7 +16,7 @@ import re
 log = logging.getLogger('bespin-cli')
 
 
-class CWLWorkflowLoader(object):
+class BespinWorkflowLoader(object):
     """
     Downloads, extracts, and loads workflows from a URL - packed or zipped.
     """
@@ -144,7 +144,7 @@ class BespinWorkflowValidator(object):
             raise InvalidWorkflowFileException('\n'.join(self.errors))
 
 
-class CWLWorkflowParser(object):
+class BespinWorkflowParser(object):
 
     def __init__(self, loaded_workflow):
         """
@@ -203,6 +203,7 @@ class CWLWorkflowParser(object):
 
 
 class CWLWorkflowVersion(object):
+
     def __init__(self, url, workflow_type, workflow_path, version_info_url=None,
                  override_version=None, override_tag=None, validate=True):
         self.url = url
@@ -218,10 +219,10 @@ class CWLWorkflowVersion(object):
         Fetch, load, parse, and (optionally) validate the workflow from the URL provided
         :param expected_tag: Optional - if provided, make sure the workflow fetched has the expected tag metadata
         :param expected_version: Optional - if provided, make sure the workflow fetched has the expected version metadata
-        :return: a CwlWorkflowParser with the loaded workflow
+        :return: a BespinWorkflowParser with the loaded workflow
         """
-        loaded = CWLWorkflowLoader(self).load()
-        parser = CWLWorkflowParser(loaded)
+        loaded = BespinWorkflowLoader(self).load()
+        parser = BespinWorkflowParser(loaded)
         if self.validate:
             validator = BespinWorkflowValidator(loaded)
             if expected_tag is None: expected_tag = parser.tag
@@ -243,7 +244,7 @@ class CWLWorkflowVersion(object):
         Validate this workflow for required bespin standard fields
         :param expected_tag: Optional - if provided, make sure the workflow fetched has the expected tag metadata
         :param expected_version: Optional - if provided, make sure the workflow fetched has the expected version metadata
-        :return: a CwlWorkflowParser with the loaded workflow
+        :return: a BespinWorkflowParser with the loaded workflow
         """
         parser = self._load_and_parse_workflow(expected_tag, expected_version)
         parser.check_required_fields()

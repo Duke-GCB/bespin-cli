@@ -243,6 +243,9 @@ class CommandsTestCase(TestCase):
             call("Created workflow version 7.")
         ])
 
+    def test_workflow_version_validate(self):
+        self.fail('not yet implemented')
+
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.WorkflowConfigurationsList')

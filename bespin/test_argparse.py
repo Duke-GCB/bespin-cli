@@ -35,6 +35,7 @@ class ArgParserTestCase(TestCase):
         self.target_object.workflow_versions_list.assert_called_with(workflow_tag="sometag")
 
     def test_workflow_versions_create(self):
+        self.fail('fix this')
         self.arg_parser.parse_and_run_commands(["workflow-version", "create",
                                                 "--workflow", "sometag",
                                                 "--url", "someurl",
@@ -46,6 +47,9 @@ class ArgParserTestCase(TestCase):
             description="SomeDesc",
             version="auto"
         )
+
+    def test_workflow_versions_validate(self):
+        self.fail('not yet implemented')
 
     def test_workflow_config_list(self):
         self.arg_parser.parse_and_run_commands(["workflow-config", "list"])

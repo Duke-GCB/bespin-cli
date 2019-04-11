@@ -1,9 +1,19 @@
 from __future__ import absolute_import
 from unittest import TestCase
-import yaml
-import json
-from bespin.workflow import CWLWorkflowVersion
+from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader, BespinWorkflowValidator, BespinWorkflowParser
 from mock import patch, call, Mock
+
+
+class BespinWorkflowLoaderTestCase(TestCase):
+    pass
+
+
+class BespinWorkflowParserTestCase(TestCase):
+    pass
+
+
+class BespinWorkflowValidatorTestCase(TestCase):
+    pass
 
 
 class CWLWorkflowVersionTestCase(TestCase):

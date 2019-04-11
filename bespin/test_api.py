@@ -170,6 +170,7 @@ class BespinApiTestCase(TestCase):
         }
         mock_requests.post.assert_called_with('someurl/admin/workflow-versions/', headers=self.expected_headers,
                                               json=expected_post_payload)
+        self.fail('should not succeed')
 
     @patch('bespin.api.requests')
     def test_stage_group_post(self, mock_requests):
