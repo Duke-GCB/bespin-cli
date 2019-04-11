@@ -165,21 +165,18 @@ class CWLWorkflowParser(object):
 
 
 class CWLWorkflowVersion(object):
-    def __init__(self, url, workflow_type, workflow_path, version_info_url, override_version=None):
+    def __init__(self, url, workflow_type, workflow_path, version_info_url, override_version=None, validate=True):
         self.url = url
         self.workflow_type = workflow_type
         self.workflow_path = workflow_path
         self.version_info_url = version_info_url
         self.override_version = override_version
-
-    def should_validate(self):
-        # Do not validate packed workflows since they pre-date our standards
-        return self.workflow_type != CWLWorkflowLoader.TYPE_PACKED
+        self.validate = validate
 
     def load_and_parse_workflow(self):
         loaded = CWLWorkflowLoader(self).load()
         parser = CWLWorkflowParser(loaded)
-        if self.should_validate():
+        if self.validate:
             validator = BespinWorkflowValidator(loaded)
             validator.validate(parser.tag, parser.version)
             validator.report(raise_on_errors=True)

@@ -69,9 +69,9 @@ def create_workflow_version(url, workflow_type, path, version_info_url, version)
     c = Commands('bespin-cli-dev', 'bespin-cli-loader')
     if workflow_type == 'zipped':
         # for zipped workflows, let parser get version from label field
-        c.workflow_version_create(url, workflow_type, path, version_info_url)
+        c.workflow_version_create(url, workflow_type, path, version_info_url, validate=True)
     else:
-        c.workflow_version_create(url, workflow_type, path, version_info_url, version)
+        c.workflow_version_create(url, workflow_type, path, version_info_url, override_version=version, validate=False)
 
 
 
