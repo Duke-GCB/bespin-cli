@@ -4,6 +4,9 @@ from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader, BespinWork
 from bespin.workflow import InvalidWorkflowFileException
 from unittest.mock import patch, call, Mock, create_autospec
 
+import logging
+logging.disable(logging.ERROR)
+
 
 @patch('bespin.workflow.tempfile.mkdtemp')
 class BespinWorkflowLoaderTestCase(TestCase):
@@ -108,11 +111,85 @@ class BespinWorkflowLoaderTestCase(TestCase):
         self.assertEqual(mock_rmtree.call_args, call(loader.download_dir))
 
 
-class BespinWorkflowParserTestCase(TestCase):
-    pass
-
-
 class BespinWorkflowValidatorTestCase(TestCase):
+
+    def setUp(self):
+        self.tag = 'processing'
+        self.version = 'v2.4.6'
+        self.workflow_dict = {
+            'class': 'Workflow',
+            'cwlVersion': 'v1.0',
+            'label': 'processing/v2.4.6',
+            'doc': 'Processing - v2.4.6',
+        }
+
+    def test_validate_ok(self):
+        workflow = Mock(tool=self.workflow_dict)
+        validator = BespinWorkflowValidator(workflow)
+        self.assertEqual(len(validator.errors), 0)
+        self.assertEqual(len(validator.messages), 0)
+        validator.validate(self.tag, self.version)
+        validator.report(True)
+        self.assertEqual(len(validator.errors), 0)
+        self.assertEqual(len(validator.messages), 8)
+        self.assertEqual('\n'.join(validator.messages), """Field 'class' exists
+Field 'class' has required value 'Workflow'
+Field 'cwlVersion' exists
+Field 'cwlVersion' has required value 'v1.0'
+Field 'label' exists
+Field 'label' has required value 'processing/v2.4.6'
+Field 'doc' exists
+Field 'doc' has required pattern 'v2.4.6'""")
+
+    def test_validate_fails_class_not_workflow(self):
+        self.workflow_dict['class'] = 'NotWorkflow'
+        workflow = Mock(tool=self.workflow_dict)
+        validator = BespinWorkflowValidator(workflow)
+        validator.validate(self.tag, self.version)
+        self.assertIn("Field 'class' must have a value of 'Workflow'", validator.errors)
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            validator.report(True)
+
+    def test_validate_fails_missing_required_fields(self):
+        workflow = Mock(tool={})
+        validator = BespinWorkflowValidator(workflow)
+        validator.validate(self.tag, self.version)
+        self.assertMultiLineEqual('\n'.join(validator.errors), """Field 'class' was not found in your CWL file
+Field 'cwlVersion' was not found in your CWL file
+Field 'label' was not found in your CWL file
+Field 'doc' was not found in your CWL file""")
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            validator.report(True)
+
+    def test_validate_fails_wrong_label_version(self):
+        self.workflow_dict['label'] = 'processing/v2.6.1'
+        workflow = Mock(tool=self.workflow_dict)
+        validator = BespinWorkflowValidator(workflow)
+        validator.validate(self.tag, self.version)
+        self.assertIn("Field 'label' must have a value of 'processing/v2.4.6'", validator.errors)
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            validator.report(True)
+
+    def test_validate_fails_wrong_label_tag(self):
+        self.workflow_dict['label'] = 'analysis/v2.4.6'
+        workflow = Mock(tool=self.workflow_dict)
+        validator = BespinWorkflowValidator(workflow)
+        validator.validate(self.tag, self.version)
+        self.assertIn("Field 'label' must have a value of 'processing/v2.4.6'", validator.errors)
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            validator.report(True)
+
+    def test_validate_fails_wrong_doc_version(self):
+        self.workflow_dict['doc'] = 'Some Workflow - v1.2.1'
+        workflow = Mock(tool=self.workflow_dict)
+        validator = BespinWorkflowValidator(workflow)
+        validator.validate(self.tag, self.version)
+        self.assertIn("Field 'doc' must have a pattern 'v2.4.6'", validator.errors)
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            validator.report(True)
+
+
+class BespinWorkflowParserTestCase(TestCase):
     pass
 
 

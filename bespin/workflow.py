@@ -13,7 +13,7 @@ from cwltool.workflow import default_make_tool
 
 from bespin.exceptions import InvalidWorkflowFileException
 
-log = logging.getLogger('bespin-cli')
+log = logging.getLogger(__name__)
 
 
 class BespinWorkflowLoader(object):
@@ -107,24 +107,30 @@ class BespinWorkflowValidator(object):
     def check_field_exists(self, name):
         if name in self.workflow.tool:
             self.add_message('Field \'{}\' exists'.format(name))
+            return True
         else:
             self.add_error('Field \'{}\' was not found in your CWL file'.format(name))
+        return False
 
     def check_field_value(self, name, value):
-        self.check_field_exists(name)
-        if self.workflow.tool.get(name) == value:
-            self.add_message('Field \'{}\' has required value \'{}\''.format(name, value))
-        else:
-            self.add_error('Field \'{}\' must have a value of \'{}\''.format(name, value))
+        if self.check_field_exists(name):
+            if self.workflow.tool.get(name) == value:
+                self.add_message('Field \'{}\' has required value \'{}\''.format(name, value))
+                return True
+            else:
+                self.add_error('Field \'{}\' must have a value of \'{}\''.format(name, value))
+        return False
 
     def check_field_pattern(self, name, pattern):
-        self.check_field_exists(name)
-        field_value = self.workflow.tool.get(name)
-        matched = re.search(pattern, field_value)
-        if matched:
-            self.add_message('Field \'{}\' has required pattern \'{}\''.format(name, pattern))
-        else:
-            self.add_error('Field \'{}\' must have a pattern \'{}\''.format(name, pattern))
+        if self.check_field_exists(name):
+            field_value = self.workflow.tool.get(name)
+            matched = re.search(pattern, field_value)
+            if matched:
+                self.add_message('Field \'{}\' has required pattern \'{}\''.format(name, pattern))
+                return True
+            else:
+                self.add_error('Field \'{}\' must have a pattern \'{}\''.format(name, pattern))
+        return False
 
     def validate(self, expected_tag, expected_version):
         # Verify it's a workflow
