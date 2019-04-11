@@ -17,6 +17,9 @@ log = logging.getLogger('bespin-cli')
 
 
 class CWLWorkflowLoader(object):
+    """
+    Downloads, extracts, and loads workflows from a URL - packed or zipped.
+    """
 
     TYPE_PACKED = 'packed'
     TYPE_ZIPPED = 'zipped'
@@ -32,6 +35,11 @@ class CWLWorkflowLoader(object):
         self.download_path = os.path.join(self.download_dir, os.path.basename(workflow_version.url))
 
     def load(self):
+        """
+        Load the workflow by downloading to a temporary directory, reading into memory, and deleting
+        the temporary directory.
+        :return: loaded CWL workflow
+        """
         self._download_workflow()
         self._handle_download()
         loaded = self._load_downloaded_workflow()
@@ -58,6 +66,12 @@ class CWLWorkflowLoader(object):
         return load_tool(tool_path, context)
 
     def _get_tool_path(self):
+        """
+        Determine what path to provide for the loader.
+        For packed workflows, we use the CWL file with #main. For zipped workflows, we must rely on workflow_path
+        to know which CWL file to load.
+        :return: tool path suitable for cwltool.load_tool.load_tool
+        """
         if self.workflow_version.workflow_type == self.TYPE_PACKED:
             tool_path = self.download_path + '#main'
         elif self.workflow_version.workflow_type == self.TYPE_ZIPPED:
@@ -69,12 +83,14 @@ class CWLWorkflowLoader(object):
     def _cleanup(self):
         """
         Remove temporary download items
-        :return:
         """
         shutil.rmtree(self.download_dir)
 
 
 class BespinWorkflowValidator(object):
+    """
+    Validates parsed workflows according to bespin standards
+    """
 
     def __init__(self, workflow):
         self.workflow = workflow
@@ -133,7 +149,7 @@ class CWLWorkflowParser(object):
     def __init__(self, loaded_workflow):
         """
         Create a workflow parser. Expects label field to contain tag and version
-        :param loaded_workflow: The loaded workflow dict-like object
+        :param loaded_workflow: The loaded cwl workflow
         """
         self.loaded_workflow = loaded_workflow
         self.version = None
@@ -154,16 +170,28 @@ class CWLWorkflowParser(object):
         self.input_fields = self.loaded_workflow.inputs_record_schema.get('fields')
 
     def extract_version_and_tag(self):
+        """
+        Attempt to extract version and tag from the label field
+        :return: None
+        """
         label = self.loaded_workflow.tool.get('label', '')
         fields = label.split('/')
         if len(fields) == 2:
             self.tag, self.version = fields
 
     def extract_description(self):
+        """
+        Attempt to extract workflow description from the doc field
+        :return:
+        """
         doc = self.loaded_workflow.tool.get('doc', '')
         self.description = doc
 
     def check_required_fields(self):
+        """
+        Method to check that fields (version, tag, description) are not empty after parsing
+        :return:
+        """
         if self.tag is None or self.version is None:
             raise InvalidWorkflowFileException('Unable to extract workflow tag and version. '
                                                'Please make sure workflow has a label field in the '
@@ -185,12 +213,20 @@ class CWLWorkflowVersion(object):
         self.override_tag = override_tag
         self.validate = validate
 
-    def _load_and_parse_workflow(self):
+    def _load_and_parse_workflow(self, expected_tag=None, expected_version=None):
+        """
+        Fetch, load, parse, and (optionally) validate the workflow from the URL provided
+        :param expected_tag: Optional - if provided, make sure the workflow fetched has the expected tag metadata
+        :param expected_version: Optional - if provided, make sure the workflow fetched has the expected version metadata
+        :return: a CwlWorkflowParser with the loaded workflow
+        """
         loaded = CWLWorkflowLoader(self).load()
         parser = CWLWorkflowParser(loaded)
         if self.validate:
             validator = BespinWorkflowValidator(loaded)
-            validator.validate(parser.tag, parser.version)
+            if expected_tag is None: expected_tag = parser.tag
+            if expected_version is None: expected_version = parser.version
+            validator.validate(expected_tag, expected_version)
             validator.report(raise_on_errors=True)
         if self.override_version:
             if parser.version is not None:
@@ -202,12 +238,23 @@ class CWLWorkflowVersion(object):
             parser.tag = self.override_tag
         return parser
 
-    def validate_workflow(self):
-        parser = self._load_and_parse_workflow()
+    def validate_workflow(self, expected_tag=None, expected_version=None):
+        """
+        Validate this workflow for required bespin standard fields
+        :param expected_tag: Optional - if provided, make sure the workflow fetched has the expected tag metadata
+        :param expected_version: Optional - if provided, make sure the workflow fetched has the expected version metadata
+        :return: a CwlWorkflowParser with the loaded workflow
+        """
+        parser = self._load_and_parse_workflow(expected_tag, expected_version)
         parser.check_required_fields()
         return parser
 
     def create(self, api):
+        """
+        Validate and create the workflow version through bespin-api
+        :param api: bespin.api.BespinApi
+        :return: response JSON dictionary
+        """
         parser = self.validate_workflow()
         workflow_id = self.get_workflow_id(api, parser.tag)
         return api.workflow_versions_post(
@@ -222,4 +269,10 @@ class CWLWorkflowVersion(object):
         )
 
     def get_workflow_id(self, api, workflow_tag):
+        """
+        Get the ID of the workflow object by its tag using Bespin API
+        :param api: bespin.api.BespinApi
+        :param workflow_tag: A workflow tag string to look up
+        :return: The id of the workflow
+        """
         return api.workflow_get_for_tag(workflow_tag)['id']

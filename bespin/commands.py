@@ -61,12 +61,10 @@ class Commands(object):
         response = workflow_version.create(api)
         print("Created workflow version {}.".format(response['id']))
 
-    def workflow_version_validate(self, url, workflow_type, workflow_path, override_tag=None,
-                                override_version=None):
-        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, override_tag=override_tag,
-                                              override_version=override_version,
-                                              validate=True)
-        validated = workflow_version.validate_workflow()
+    def workflow_version_validate(self, url, workflow_type, workflow_path, expected_tag=None,
+                                expected_version=None):
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=True)
+        validated = workflow_version.validate_workflow(expected_tag, expected_version)
         print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
 
 

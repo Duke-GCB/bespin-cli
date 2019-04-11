@@ -107,9 +107,12 @@ class WorkflowVersionCommand(object):
 
         validate_parser = subparsers.add_parser('validate', description='Validate workflow according to bespin standards')
         validate_parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
-        validate_parser.add_argument('--type', required=True, help='Type of worklfow (zipped or packed)')
+        validate_parser.add_argument('--type', default='zipped',
+                                     help='Type of workflow (zipped or packed)')
         validate_parser.add_argument('--path', required=True, help='Path to the workflow to run (relative path in '
                                                                    'unzipped archive or #main for packed workflows)')
+        validate_parser.add_argument('--version', help='Explicit version to check when validating')
+        validate_parser.add_argument('--tag', help='Explicit workflow tag to check when validating')
         validate_parser.set_defaults(func=self._validate)
 
     def _list(self, args):
@@ -124,7 +127,9 @@ class WorkflowVersionCommand(object):
     def _validate(self, args):
         self.target.workflow_version_validate(url=args.url,
                                               workflow_type=args.type,
-                                              workflow_path=args.path)
+                                              workflow_path=args.path,
+                                              expected_tag=args.tag,
+                                              expected_version=args.version)
 
 
 class WorkflowConfigCommand(object):
