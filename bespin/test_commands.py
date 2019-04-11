@@ -237,14 +237,29 @@ class CommandsTestCase(TestCase):
             'id': 7
         }
         commands = Commands(self.version_str, self.user_agent_str)
-        commands.workflow_version_create(workflow_tag='exomeseq', url='someurl', description='mydesc', version=1)
-        mock_cwl_workflow_version.assert_called_with('exomeseq', 'someurl', 'mydesc', 1)
+        commands.workflow_version_create(url='someurl', workflow_type='packed', workflow_path='#main',
+                                         version_info_url='infourl', override_version='v3.2', override_tag='tag',
+                                         validate=True)
+        mock_cwl_workflow_version.assert_called_with('someurl','packed', '#main', 'infourl',override_tag='tag',
+                                                     override_version='v3.2',validate=True)
         mock_print.assert_has_calls([
             call("Created workflow version 7.")
         ])
 
-    def test_workflow_version_validate(self):
-        self.fail('not yet implemented')
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    @patch('bespin.commands.CWLWorkflowVersion')
+    def test_workflow_version_validate(self, mock_cwl_workflow_version, mock_print, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        mock_cwl_workflow_version.return_value.validate_workflow.return_value = Mock(tag='workflow-tag',version='v1.2.3')
+        commands.workflow_version_validate(url='someurl', workflow_type='zipped', workflow_path='extracted/workflow.cwl',
+                                           expected_tag='workflow-tag', expected_version='v1.2.3')
+        mock_cwl_workflow_version.assert_called_with('someurl','zipped','extracted/workflow.cwl', validate=True)
+        mock_print.assert_has_calls([
+            call("Validated someurl as 'workflow-tag/v1.2.3'")
+        ])
+
 
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
