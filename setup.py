@@ -56,5 +56,6 @@ setup(name='bespin-cli',
       ],
       cmdclass={
         'verify': VerifyVersionCommand,
-      }
+      },
+      test_suite='nose2.collector.collector',
       )
