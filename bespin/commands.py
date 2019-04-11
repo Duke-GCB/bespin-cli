@@ -56,9 +56,19 @@ class Commands(object):
                                 override_version=None, validate=True):
         api = self._create_api()
         workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, version_info_url,
-                                              override_tag=override_tag, override_version=override_version, validate=validate)
+                                              override_tag=override_tag, override_version=override_version,
+                                              validate=validate)
         response = workflow_version.create(api)
         print("Created workflow version {}.".format(response['id']))
+
+    def workflow_version_validate(self, url, workflow_type, workflow_path, override_tag=None,
+                                override_version=None):
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, override_tag=override_tag,
+                                              override_version=override_version,
+                                              validate=True)
+        validated = workflow_version.validate_workflow()
+        print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
+
 
     def workflow_configs_list(self, workflow_tag):
         api = self._create_api()

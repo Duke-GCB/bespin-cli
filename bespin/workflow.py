@@ -175,7 +175,8 @@ class CWLWorkflowParser(object):
 
 
 class CWLWorkflowVersion(object):
-    def __init__(self, url, workflow_type, workflow_path, version_info_url, override_version=None, override_tag=None, validate=True):
+    def __init__(self, url, workflow_type, workflow_path, version_info_url=None,
+                 override_version=None, override_tag=None, validate=True):
         self.url = url
         self.workflow_type = workflow_type
         self.workflow_path = workflow_path
@@ -184,7 +185,7 @@ class CWLWorkflowVersion(object):
         self.override_tag = override_tag
         self.validate = validate
 
-    def load_and_parse_workflow(self):
+    def _load_and_parse_workflow(self):
         loaded = CWLWorkflowLoader(self).load()
         parser = CWLWorkflowParser(loaded)
         if self.validate:
@@ -201,9 +202,13 @@ class CWLWorkflowVersion(object):
             parser.tag = self.override_tag
         return parser
 
-    def create(self, api):
-        parser = self.load_and_parse_workflow()
+    def validate_workflow(self):
+        parser = self._load_and_parse_workflow()
         parser.check_required_fields()
+        return parser
+
+    def create(self, api):
+        parser = self.validate_workflow()
         workflow_id = self.get_workflow_id(api, parser.tag)
         return api.workflow_versions_post(
             workflow=workflow_id,

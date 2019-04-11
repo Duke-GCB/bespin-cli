@@ -98,12 +98,19 @@ class WorkflowVersionCommand(object):
         create_parser.add_argument('--workflow', metavar='WORKFLOW_TAG', required=True,
                                    help='Tag specifying workflow to assign this workflow version to')
         create_parser.add_argument('--url', required=True,
-                                   help='URL that specifies the packed CWL workflow')
+                                   help='URL that specifies the CWL workflow')
         create_parser.add_argument('--description', required=True,
                                    help='Workflow version description')
         create_parser.add_argument('--version', required=True,
                                    help='Version number or "auto" to automatically determine next version.')
         create_parser.set_defaults(func=self._create)
+
+        validate_parser = subparsers.add_parser('validate', description='Validate workflow according to bespin standards')
+        validate_parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
+        validate_parser.add_argument('--type', required=True, help='Type of worklfow (zipped or packed)')
+        validate_parser.add_argument('--path', required=True, help='Path to the workflow to run (relative path in '
+                                                                   'unzipped archive or #main for packed workflows)')
+        validate_parser.set_defaults(func=self._validate)
 
     def _list(self, args):
         self.target.workflow_versions_list(workflow_tag=args.workflow)
@@ -113,6 +120,11 @@ class WorkflowVersionCommand(object):
                                             url=args.url,
                                             description=args.description,
                                             version=args.version)
+
+    def _validate(self, args):
+        self.target.workflow_version_validate(url=args.url,
+                                              workflow_type=args.type,
+                                              workflow_path=args.path)
 
 
 class WorkflowConfigCommand(object):
