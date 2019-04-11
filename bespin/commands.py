@@ -287,7 +287,7 @@ class WorkflowVersionsList(object):
     def __init__(self, api, workflow_tag):
         self.api = api
         self.workflow_tag = workflow_tag
-        self.column_names = ["id", "description", self.WORKFLOW_FIELDNAME, "version", "url"]
+        self.column_names = ["id", "description", self.WORKFLOW_FIELDNAME, "version", "url", "workflow_path"]
 
     def get_column_data(self):
         data = []

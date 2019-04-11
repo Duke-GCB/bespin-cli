@@ -497,13 +497,14 @@ class WorkflowVersionsListTestCase(TestCase):
                 'url': 'someurl',
                 'tag': 'mytag',
                 "workflow": 3,
+                'workflow_path': '#main'
             }
         ]
         mock_api.workflow_get.return_value = {
             'tag': 'othertag'
         }
         details = WorkflowVersionsList(mock_api, workflow_tag='sometag')
-        self.assertEqual(details.column_names, ["id", "description", "workflow tag", "version", "url"])
+        self.assertEqual(details.column_names, ["id", "description", "workflow tag", "version", "url", "workflow_path"])
         self.assertEqual(details.get_column_data(), [
             {
                 'description': 'Exome Seq',
@@ -512,7 +513,8 @@ class WorkflowVersionsListTestCase(TestCase):
                 'url': 'someurl',
                 'version': 2,
                 'workflow': 3,
-                'workflow tag': 'othertag'
+                'workflow tag': 'othertag',
+                'workflow_path': '#main'
             }
         ])
 
