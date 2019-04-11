@@ -158,19 +158,28 @@ class BespinApiTestCase(TestCase):
         mock_requests.post.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        worflow_version = api.workflow_versions_post(workflow=1, version_num=2, description="my desc", url="someurl2",
-                                                 fields=[])
+        #     def workflow_versions_post(self, workflow, version, workflow_type, description, workflow_path, url, version_info_url, fields):
+        worflow_version = api.workflow_versions_post(workflow=1,
+                                                     version='v2.1.0',
+                                                     workflow_type='zipped',
+                                                     description='my desc',
+                                                     workflow_path='dir/workflow.cwl',
+                                                     url='https://example.com/v2.1.0.zip',
+                                                     version_info_url='https://example.com/info.md',
+                                                     fields=['field1'])
         self.assertEqual(worflow_version, 'worflow_version1')
         expected_post_payload = {
             'workflow': 1,
-            'version': 2,
+            'version': 'v2.1.0',
             'description': 'my desc',
-            'url': 'someurl2',
-            'fields': []
+            'url': 'https://example.com/v2.1.0.zip',
+            'type': 'zipped',
+            'workflow_path': 'dir/workflow.cwl',
+            'version_info_url': 'https://example.com/info.md',
+            'fields': ['field1']
         }
         mock_requests.post.assert_called_with('someurl/admin/workflow-versions/', headers=self.expected_headers,
                                               json=expected_post_payload)
-        self.fail('should not succeed')
 
     @patch('bespin.api.requests')
     def test_stage_group_post(self, mock_requests):
