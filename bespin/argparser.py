@@ -95,40 +95,56 @@ class WorkflowVersionCommand(object):
         list_parser.set_defaults(func=self._list)
 
         create_parser = subparsers.add_parser('create', description='create new workflow version')
-        create_parser.add_argument('--workflow', metavar='WORKFLOW_TAG', required=True,
-                                   help='Tag specifying workflow to assign this workflow version to')
-        create_parser.add_argument('--url', required=True,
-                                   help='URL that specifies the CWL workflow')
-        create_parser.add_argument('--description', required=True,
-                                   help='Workflow version description')
-        create_parser.add_argument('--version', required=True,
-                                   help='Version number or "auto" to automatically determine next version.')
         create_parser.set_defaults(func=self._create)
-
         validate_parser = subparsers.add_parser('validate', description='Validate workflow according to bespin standards')
-        validate_parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
-        validate_parser.add_argument('--type', default='zipped',
-                                     help='Type of workflow (zipped or packed)')
-        validate_parser.add_argument('--path', required=True, help='Path to the workflow to run (relative path in '
-                                                                   'unzipped archive or #main for packed workflows)')
-        validate_parser.add_argument('--version', help='Explicit version to check when validating')
-        validate_parser.add_argument('--tag', help='Explicit workflow tag to check when validating')
         validate_parser.set_defaults(func=self._validate)
+
+        # Create and validate have some common arguments
+        for parser in [create_parser, validate_parser]:
+            parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
+            parser.add_argument('--type', default='zipped', help='Type of workflow (zipped or packed)')
+            parser.add_argument('--path', required=True, help='Path to the workflow to run (relative path in '
+                                                                   'unzipped archive or #main for packed workflows)')
+
+        # They differ slightly in what version and workflow tag mean,
+        create_parser.add_argument('--version', metavar='VERSION_STRING',
+                                     help='Explicit version to use when creating version '
+                                          '(otherwise reads from CWL label)')
+        create_parser.add_argument('--workflow-tag', metavar='WORKFLOW_TAG',
+                                     help='Explicit workflow tag to use when creating version '
+                                          '(otherwise reads from CWL label)')
+
+        # Create also requires the version_info_url
+        create_parser.add_argument('--version-info-url', required=True, help='URL of document with release notes '
+                                                                             'or other version information')
+        # Option to disable validation when creating a workflow, but default to validate
+        create_validate_group = create_parser.add_mutually_exclusive_group(required=False)
+        create_validate_group.add_argument('--validate', dest='validate', action='store_true')
+        create_validate_group.add_argument('--no-validate', dest='validate', action='store_false')
+        create_parser.set_defaults(validate=True)
+
+        validate_parser.add_argument('--version', metavar='VERSION_STRING',
+                                     help='Explicit version to check when validating')
+        validate_parser.add_argument('--workflow-tag', metavar='WORKFLOW_TAG',
+                                     help='Explicit workflow tag to check when validating')
 
     def _list(self, args):
         self.target.workflow_versions_list(workflow_tag=args.workflow)
 
     def _create(self, args):
-        self.target.workflow_version_create(workflow_tag=args.workflow,
-                                            url=args.url,
-                                            description=args.description,
-                                            version=args.version)
+        self.target.workflow_version_create(url=args.url,
+                                            workflow_type=args.type,
+                                            workflow_path=args.path,
+                                            version_info_url=args.version_info_url,
+                                            override_tag=args.workflow_tag,
+                                            override_version=args.version,
+                                            validate=args.validate)
 
     def _validate(self, args):
         self.target.workflow_version_validate(url=args.url,
                                               workflow_type=args.type,
                                               workflow_path=args.path,
-                                              expected_tag=args.tag,
+                                              expected_tag=args.workflow_tag,
                                               expected_version=args.version)
 
 

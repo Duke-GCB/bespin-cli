@@ -34,22 +34,84 @@ class ArgParserTestCase(TestCase):
         self.arg_parser.parse_and_run_commands(["workflow-version", "list", "--workflow", "sometag"])
         self.target_object.workflow_versions_list.assert_called_with(workflow_tag="sometag")
 
-    def test_workflow_versions_create(self):
-        self.fail('fix this')
+    def test_workflow_versions_create_only_required(self):
         self.arg_parser.parse_and_run_commands(["workflow-version", "create",
-                                                "--workflow", "sometag",
                                                 "--url", "someurl",
-                                                "--description", "SomeDesc",
-                                                "--version", "auto"])
+                                                "--type", "packed",
+                                                "--path", "#main",
+                                                "--version-info-url", "infourl"])
         self.target_object.workflow_version_create.assert_called_with(
-            workflow_tag="sometag",
             url="someurl",
-            description="SomeDesc",
-            version="auto"
+            workflow_type="packed",
+            workflow_path="#main",
+            version_info_url="infourl",
+            override_tag=None,
+            override_version=None,
+            validate=True
         )
 
-    def test_workflow_versions_validate(self):
-        self.fail('not yet implemented')
+    def test_workflow_versions_create_with_explicit_version_and_tag(self):
+        self.arg_parser.parse_and_run_commands(['workflow-version', 'create',
+                                                '--url', 'someurl',
+                                                '--type', 'packed',
+                                                '--path', '#main',
+                                                '--version-info-url','infourl',
+                                                '--version', 'v3.1.0',
+                                                '--workflow-tag','newtag'])
+        self.target_object.workflow_version_create.assert_called_with(
+            url="someurl",
+            workflow_type="packed",
+            workflow_path="#main",
+            version_info_url="infourl",
+            override_tag='newtag',
+            override_version='v3.1.0',
+            validate=True
+        )
+
+    def test_workflow_versions_create_novalidate(self):
+        self.arg_parser.parse_and_run_commands(["workflow-version", "create",
+                                                "--url", "someurl",
+                                                "--type", "packed",
+                                                "--path", "#main",
+                                                "--version-info-url", "infourl",
+                                                "--no-validate"])
+        self.target_object.workflow_version_create.assert_called_with(
+            url="someurl",
+            workflow_type="packed",
+            workflow_path="#main",
+            version_info_url="infourl",
+            override_tag=None,
+            override_version=None,
+            validate=False
+        )
+
+    def test_workflow_versions_validate_only_required(self):
+        self.arg_parser.parse_and_run_commands(['workflow-version', 'validate',
+                                                '--url', 'someurl',
+                                                '--type', 'packed',
+                                                '--path', '#main'])
+        self.target_object.workflow_version_validate.assert_called_with(
+            url="someurl",
+            workflow_type="packed",
+            workflow_path="#main",
+            expected_tag=None,
+            expected_version=None
+        )
+
+    def test_workflow_versions_validate_with_explicit_version_and_tag(self):
+        self.arg_parser.parse_and_run_commands(['workflow-version', 'validate',
+                                                '--url', 'someurl',
+                                                '--type', 'packed',
+                                                '--path', '#main',
+                                                '--workflow-tag', 'expected-tag',
+                                                '--version','vE.X.P'])
+        self.target_object.workflow_version_validate.assert_called_with(
+            url="someurl",
+            workflow_type="packed",
+            workflow_path="#main",
+            expected_tag='expected-tag',
+            expected_version='vE.X.P'
+        )
 
     def test_workflow_config_list(self):
         self.arg_parser.parse_and_run_commands(["workflow-config", "list"])
