@@ -163,20 +163,20 @@ class BespinWorkflowParser(object):
         self.tag = None
         self.description = None
         self.input_fields = None
-        self.extract_metadata()
-        self.extract_input_fields()
+        self._extract_metadata()
+        self._extract_input_fields()
 
-    def extract_metadata(self):
-        self.extract_version_and_tag()
-        self.extract_description()
+    def _extract_metadata(self):
+        self._extract_version_and_tag()
+        self._extract_description()
 
-    def extract_input_fields(self):
+    def _extract_input_fields(self):
         # Using inputs_record_schema['fields'] here as that has type dictionaries
         # (e.g {'name': 'input_file', 'type': 'File'}) and no fragments/references based on local
         # file paths.
         self.input_fields = self.loaded_workflow.inputs_record_schema.get('fields')
 
-    def extract_version_and_tag(self):
+    def _extract_version_and_tag(self):
         """
         Attempt to extract version and tag from the label field
         :return: None
@@ -186,7 +186,7 @@ class BespinWorkflowParser(object):
         if len(fields) == 2:
             self.tag, self.version = fields
 
-    def extract_description(self):
+    def _extract_description(self):
         """
         Attempt to extract workflow description from the doc field
         :return:
@@ -197,14 +197,13 @@ class BespinWorkflowParser(object):
     def check_required_fields(self):
         """
         Method to check that fields (version, tag, description) are not empty after parsing
-        :return:
         """
         if self.tag is None or self.version is None:
             raise InvalidWorkflowFileException('Unable to extract workflow tag and version. '
                                                'Please make sure workflow has a label field in the '
                                                'format \'tag/version\' (e.g. label: exomeseq-gatk4/v1.0.0)')
         if not self.description:
-            raise InvalidWorkflowFileException('Unable to extract description. Please make sure workflow '
+            raise InvalidWorkflowFileException('Unable to extract workflow description. Please make sure workflow '
                                                'has a long description in the doc field '
                                                '(e.g. doc: Whole Exome Sequence analysis using GATK 4 - v1.0.0')
 

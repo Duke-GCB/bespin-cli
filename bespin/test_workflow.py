@@ -190,7 +190,51 @@ Field 'doc' was not found in your CWL file""")
 
 
 class BespinWorkflowParserTestCase(TestCase):
-    pass
+
+    def setUp(self):
+        self.loaded_workflow = Mock(
+            tool={'label':'processing/v2.4.6', 'doc': 'Processing v2.4.6'},
+            inputs_record_schema={'fields': ['field1','field2']}
+        )
+
+    def test_parses_on_init(self):
+        parser = BespinWorkflowParser(self.loaded_workflow)
+        self.assertEqual(parser.version, 'v2.4.6')
+        self.assertEqual(parser.tag, 'processing')
+        self.assertEqual(parser.description, 'Processing v2.4.6')
+        self.assertEqual(parser.input_fields, ['field1','field2'])
+
+    def test_ignores_label_if_invalid(self):
+        self.loaded_workflow.tool['label'] = 'workflow-v1.2.3'
+        parser = BespinWorkflowParser(self.loaded_workflow)
+        self.assertIsNone(parser.tag)
+        self.assertIsNone(parser.version)
+        self.assertIsNotNone(parser.description)
+
+    def test_check_required_fields_raises_on_empty_tag(self):
+        parser = BespinWorkflowParser(self.loaded_workflow)
+        parser.tag = None
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            parser.check_required_fields()
+        self.assertIn('Unable to extract workflow tag and version', str(context.exception))
+
+    def test_check_required_fields_raises_on_empty_version(self):
+        parser = BespinWorkflowParser(self.loaded_workflow)
+        parser.version = None
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            parser.check_required_fields()
+        self.assertIn('Unable to extract workflow tag and version', str(context.exception))
+
+    def test_check_required_fields_raises_on_empty_description(self):
+        parser = BespinWorkflowParser(self.loaded_workflow)
+        parser.description = ''
+        with self.assertRaises(InvalidWorkflowFileException) as context:
+            parser.check_required_fields()
+        self.assertIn('Unable to extract workflow description', str(context.exception))
+
+    def test_check_required_fields_ok(self):
+        parser = BespinWorkflowParser(self.loaded_workflow)
+        parser.check_required_fields()
 
 
 class CWLWorkflowVersionTestCase(TestCase):
