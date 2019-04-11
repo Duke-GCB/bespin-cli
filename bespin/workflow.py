@@ -1,17 +1,17 @@
-from cwltool.context import LoadingContext
-from cwltool.workflow import default_make_tool
-from cwltool.resolver import tool_resolver
-from cwltool.load_tool import load_tool
-
-from bespin.exceptions import WorkflowNotFound, InvalidWorkflowFileException
 import logging
-
-import tempfile
-import shutil
-from urllib.request import urlretrieve
-import zipfile
 import os
 import re
+import shutil
+import tempfile
+import zipfile
+from urllib.request import urlretrieve
+
+from cwltool.context import LoadingContext
+from cwltool.load_tool import load_tool
+from cwltool.resolver import tool_resolver
+from cwltool.workflow import default_make_tool
+
+from bespin.exceptions import InvalidWorkflowFileException
 
 log = logging.getLogger('bespin-cli')
 
@@ -77,7 +77,8 @@ class BespinWorkflowLoader(object):
         elif self.workflow_version.workflow_type == self.TYPE_ZIPPED:
             tool_path = os.path.join(self.download_dir, self.workflow_version.workflow_path)
         else:
-            raise InvalidWorkflowFileException('Workflow type {} is not supported'.format(self.workflow_version.workflow_type))
+            raise InvalidWorkflowFileException(
+                'Workflow type {} is not supported'.format(self.workflow_version.workflow_type))
         return tool_path
 
     def _cleanup(self):
