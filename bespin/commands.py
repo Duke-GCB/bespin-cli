@@ -52,11 +52,21 @@ class Commands(object):
         api = self._create_api()
         self._print_details_as_table(WorkflowVersionsList(api, workflow_tag))
 
-    def workflow_version_create(self, workflow_tag, url, description, version):
+    def workflow_version_create(self, url, workflow_type, workflow_path, version_info_url, override_tag=None,
+                                override_version=None, validate=True):
         api = self._create_api()
-        workflow_version = CWLWorkflowVersion(workflow_tag, url, description, version)
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, version_info_url,
+                                              override_tag=override_tag, override_version=override_version,
+                                              validate=validate)
         response = workflow_version.create(api)
         print("Created workflow version {}.".format(response['id']))
+
+    def workflow_version_validate(self, url, workflow_type, workflow_path, expected_tag=None,
+                                expected_version=None):
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=True)
+        validated = workflow_version.validate_workflow(expected_tag, expected_version)
+        print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
+
 
     def workflow_configs_list(self, workflow_tag):
         api = self._create_api()
@@ -277,7 +287,7 @@ class WorkflowVersionsList(object):
     def __init__(self, api, workflow_tag):
         self.api = api
         self.workflow_tag = workflow_tag
-        self.column_names = ["id", "description", self.WORKFLOW_FIELDNAME, "version", "url"]
+        self.column_names = ["id", "description", self.WORKFLOW_FIELDNAME, "version", "url", "workflow_path"]
 
     def get_column_data(self):
         data = []
