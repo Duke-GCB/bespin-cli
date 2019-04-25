@@ -13,7 +13,8 @@ class BespinWorkflowLoaderTestCase(TestCase):
 
     def setUp(self):
         self.workflow_version = create_autospec(CWLWorkflowVersion,
-                                                url='http://example.com/workflow.cwl')
+                                                url='http://example.com/workflow.cwl',
+                                                workflow_type='dummy')
         self.packed_workflow_version = create_autospec(CWLWorkflowVersion,
                                                        url='http://example.com/packed.cwl',
                                                        workflow_type=BespinWorkflowLoader.TYPE_PACKED,
@@ -30,12 +31,20 @@ class BespinWorkflowLoaderTestCase(TestCase):
     def setup_mkdtemp(self, mock_mkdtemp):
         mock_mkdtemp.return_value = '/tmpdir'
 
-    def test_init(self, mock_mkdtemp):
+    def test_init_common(self, mock_mkdtemp):
         self.setup_mkdtemp(mock_mkdtemp)
         loader = BespinWorkflowLoader(self.workflow_version)
         self.assertEqual(loader.download_dir, mock_mkdtemp.return_value)
         self.assertEqual(loader.workflow_version, self.workflow_version)
         self.assertEqual(loader.download_path, '/tmpdir/workflow.cwl')
+
+    def test_init_direct(self, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.direct_workflow_version)
+        self.assertFalse(mock_mkdtemp.called)
+        self.assertEqual(loader.workflow_version, self.direct_workflow_version)
+        self.assertFalse(hasattr(loader, 'download_path'))
+        self.assertFalse(hasattr(loader, 'download_dir'))
 
     @patch('bespin.workflow.BespinWorkflowLoader._download_workflow')
     @patch('bespin.workflow.BespinWorkflowLoader._handle_download')
@@ -66,6 +75,7 @@ class BespinWorkflowLoaderTestCase(TestCase):
         self.setup_mkdtemp(mock_mkdtemp)
         loader = BespinWorkflowLoader(self.direct_workflow_version)
         loader._download_workflow()
+        self.assertFalse(mock_mkdtemp.called)
         self.assertFalse(mock_urlretriefve.called)
 
     @patch('bespin.workflow.zipfile.ZipFile')

@@ -31,9 +31,10 @@ class BespinWorkflowLoader(object):
         :param workflow_version: CWLWorkflowVersion containing the workflow_type and workflow_path
         :param download_dir: Optional path to a download directory. If None, a temp directory is used
         """
-        self.download_dir = tempfile.mkdtemp()
         self.workflow_version = workflow_version
-        self.download_path = os.path.join(self.download_dir, os.path.basename(workflow_version.url))
+        if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
+            self.download_dir = tempfile.mkdtemp()
+            self.download_path = os.path.join(self.download_dir, os.path.basename(workflow_version.url))
 
     def load(self):
         """
