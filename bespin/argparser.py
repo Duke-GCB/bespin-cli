@@ -104,7 +104,8 @@ class WorkflowVersionCommand(object):
             parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
 
         # They differ slightly in how the version and tag arguments are interpreted
-        create_parser.add_argument('--type', default='zipped', help='Type of workflow (zipped or packed)')
+        create_parser.add_argument('--type', default='zipped', help='Type of workflow',
+                                   choices=['zipped','packed'])
         create_parser.add_argument('--path', required=True, help='Path to the workflow to run (relative path in '
                                                             'unzipped archive or #main for packed workflows)')
 
@@ -124,7 +125,8 @@ class WorkflowVersionCommand(object):
         create_validate_group.add_argument('--no-validate', dest='validate', action='store_false')
         create_parser.set_defaults(validate=True)
 
-        validate_parser.add_argument('--type', default='zipped', help='Type of workflow (zipped, packed, or direct)')
+        validate_parser.add_argument('--type', default='zipped', help='Type of workflow',
+                                     choices=['zipped','packed','direct'])
         validate_parser.add_argument('--path', required=False, help='Path to the workflow to run (relative path in '
                                                                  'unzipped archive or #main for packed workflows.'
                                                                     'Cannot be used for \'direct\' type)')
