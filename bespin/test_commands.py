@@ -265,6 +265,13 @@ class CommandsTestCase(TestCase):
                                                expected_tag='workflow-tag', expected_version='v1.2.3')
         self.assertIn('Do not provide path', str(context.exception))
 
+    def test_workflow_version_validate_raises_without_path(self):
+        commands = Commands(self.version_str, self.user_agent_str)
+        with self.assertRaises(UserInputException) as context:
+            commands.workflow_version_validate(url='someurl', workflow_type='not-direct', workflow_path=None,
+                                               expected_tag='workflow-tag', expected_version='v1.2.3')
+        self.assertIn('path is required', str(context.exception))
+
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.WorkflowConfigurationsList')
