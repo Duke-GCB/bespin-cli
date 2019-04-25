@@ -264,11 +264,11 @@ class CommandsTestCase(TestCase):
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.print')
     @patch('bespin.commands.CWLWorkflowVersion')
-    def test_workflow_version_validate_local_raises_if_path(self, mock_cwl_workflow_version, mock_print, mock_bespin_api, mock_config_file):
+    def test_workflow_version_validate_direct_raises_if_path(self, mock_cwl_workflow_version, mock_print, mock_bespin_api, mock_config_file):
         commands = Commands(self.version_str, self.user_agent_str)
         # mock_cwl_workflow_version.return_value.validate_workflow.return_value = Mock(tag='workflow-tag',version='v1.2.3')
         with self.assertRaises(UserInputException) as context:
-            commands.workflow_version_validate(url='someurl', workflow_type='local', workflow_path='extracted/workflow.cwl',
+            commands.workflow_version_validate(url='someurl', workflow_type='direct', workflow_path='extracted/workflow.cwl',
                                                expected_tag='workflow-tag', expected_version='v1.2.3')
         self.assertIn('Do not provide path', str(context.exception))
 

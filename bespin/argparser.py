@@ -124,10 +124,10 @@ class WorkflowVersionCommand(object):
         create_validate_group.add_argument('--no-validate', dest='validate', action='store_false')
         create_parser.set_defaults(validate=True)
 
-        validate_parser.add_argument('--type', default='zipped', help='Type of workflow (zipped, packed, or local)')
+        validate_parser.add_argument('--type', default='zipped', help='Type of workflow (zipped, packed, or direct)')
         validate_parser.add_argument('--path', required=False, help='Path to the workflow to run (relative path in '
                                                                  'unzipped archive or #main for packed workflows.'
-                                                                    'Not used for local validation)')
+                                                                    'Cannot be used for \'direct\' type)')
         validate_parser.add_argument('--version', metavar='VERSION_STRING',
                                      help='Explicit version to check when validating')
         validate_parser.add_argument('--workflow-tag', metavar='WORKFLOW_TAG',

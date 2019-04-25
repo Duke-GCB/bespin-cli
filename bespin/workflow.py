@@ -23,7 +23,7 @@ class BespinWorkflowLoader(object):
 
     TYPE_PACKED = 'packed'
     TYPE_ZIPPED = 'zipped'
-    TYPE_LOCAL = 'local'
+    TYPE_DIRECT = 'direct'
 
     def __init__(self, workflow_version):
         """
@@ -48,7 +48,7 @@ class BespinWorkflowLoader(object):
         return loaded
 
     def _download_workflow(self):
-        if not self.workflow_version.workflow_type == self.TYPE_LOCAL:
+        if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
             urlretrieve(self.workflow_version.url, self.download_path)
 
     def _handle_download(self):
@@ -78,7 +78,7 @@ class BespinWorkflowLoader(object):
             tool_path = self.download_path + '#main'
         elif self.workflow_version.workflow_type == self.TYPE_ZIPPED:
             tool_path = os.path.join(self.download_dir, self.workflow_version.workflow_path)
-        elif self.workflow_version.workflow_type == self.TYPE_LOCAL:
+        elif self.workflow_version.workflow_type == self.TYPE_DIRECT:
             tool_path = self.workflow_version.url
         else:
             raise InvalidWorkflowFileException(
@@ -89,7 +89,7 @@ class BespinWorkflowLoader(object):
         """
         Remove temporary download items
         """
-        if not self.workflow_version.workflow_type == self.TYPE_LOCAL:
+        if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
             shutil.rmtree(self.download_dir)
 
 
