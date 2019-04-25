@@ -1,7 +1,7 @@
 from __future__ import print_function
 from bespin.config import ConfigFile
 from bespin.api import BespinApi
-from bespin.workflow import CWLWorkflowVersion
+from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader
 from bespin.jobtemplate import JobTemplateLoader
 from bespin.exceptions import WorkflowConfigurationNotFoundException, UserInputException
 from tabulate import tabulate
@@ -63,6 +63,10 @@ class Commands(object):
 
     def workflow_version_validate(self, url, workflow_type, workflow_path, expected_tag=None,
                                 expected_version=None):
+        # local workflow type is a direct URL to a workflow file, it should not have a workflow_path
+        if workflow_type == BespinWorkflowLoader.TYPE_LOCAL and workflow_path:
+            msg = "Error: Do not provide path for {} workflows".format(BespinWorkflowLoader.TYPE_LOCAL)
+            raise  UserInputException(msg)
         workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=True)
         validated = workflow_version.validate_workflow(expected_tag, expected_version)
         print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
