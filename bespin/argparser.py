@@ -102,11 +102,13 @@ class WorkflowVersionCommand(object):
         # Create and validate have some common arguments
         for parser in [create_parser, validate_parser]:
             parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
-            parser.add_argument('--type', default='zipped', help='Type of workflow (zipped or packed)')
-            parser.add_argument('--path', required=True, help='Path to the workflow to run (relative path in '
-                                                                   'unzipped archive or #main for packed workflows)')
 
-        # They differ slightly in what version and workflow tag mean,
+        # They differ slightly in how the version and tag arguments are interpreted
+        create_parser.add_argument('--type', default='zipped', help='Type of workflow',
+                                   choices=['zipped','packed'])
+        create_parser.add_argument('--path', required=True, help='Path to the workflow to run (relative path in '
+                                                            'unzipped archive or #main for packed workflows)')
+
         create_parser.add_argument('--version', metavar='VERSION_STRING',
                                      help='Explicit version to use when creating version '
                                           '(otherwise reads from CWL label)')
@@ -123,6 +125,11 @@ class WorkflowVersionCommand(object):
         create_validate_group.add_argument('--no-validate', dest='validate', action='store_false')
         create_parser.set_defaults(validate=True)
 
+        validate_parser.add_argument('--type', default='zipped', help='Type of workflow',
+                                     choices=['zipped','packed','direct'])
+        validate_parser.add_argument('--path', required=False, help='Path to the workflow to run (relative path in '
+                                                                 'unzipped archive or #main for packed workflows.'
+                                                                    'Cannot be used for \'direct\' type)')
         validate_parser.add_argument('--version', metavar='VERSION_STRING',
                                      help='Explicit version to check when validating')
         validate_parser.add_argument('--workflow-tag', metavar='WORKFLOW_TAG',

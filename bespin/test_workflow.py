@@ -13,7 +13,8 @@ class BespinWorkflowLoaderTestCase(TestCase):
 
     def setUp(self):
         self.workflow_version = create_autospec(CWLWorkflowVersion,
-                                                url='http://example.com/workflow.cwl')
+                                                url='http://example.com/workflow.cwl',
+                                                workflow_type='dummy')
         self.packed_workflow_version = create_autospec(CWLWorkflowVersion,
                                                        url='http://example.com/packed.cwl',
                                                        workflow_type=BespinWorkflowLoader.TYPE_PACKED,
@@ -22,16 +23,28 @@ class BespinWorkflowLoaderTestCase(TestCase):
                                                        url='http://example.com/zipped.zip',
                                                        workflow_type=BespinWorkflowLoader.TYPE_ZIPPED,
                                                        workflow_path='unzipped/workflow.cwl')
+        self.direct_workflow_version = create_autospec(CWLWorkflowVersion,
+                                                       url='file:///direct/direct.cwl',
+                                                       workflow_type=BespinWorkflowLoader.TYPE_DIRECT,
+                                                       workflow_path=None)
 
     def setup_mkdtemp(self, mock_mkdtemp):
         mock_mkdtemp.return_value = '/tmpdir'
 
-    def test_init(self, mock_mkdtemp):
+    def test_init_common(self, mock_mkdtemp):
         self.setup_mkdtemp(mock_mkdtemp)
         loader = BespinWorkflowLoader(self.workflow_version)
         self.assertEqual(loader.download_dir, mock_mkdtemp.return_value)
         self.assertEqual(loader.workflow_version, self.workflow_version)
         self.assertEqual(loader.download_path, '/tmpdir/workflow.cwl')
+
+    def test_init_direct(self, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.direct_workflow_version)
+        self.assertFalse(mock_mkdtemp.called)
+        self.assertEqual(loader.workflow_version, self.direct_workflow_version)
+        self.assertFalse(hasattr(loader, 'download_path'))
+        self.assertFalse(hasattr(loader, 'download_dir'))
 
     @patch('bespin.workflow.BespinWorkflowLoader._download_workflow')
     @patch('bespin.workflow.BespinWorkflowLoader._handle_download')
@@ -53,9 +66,17 @@ class BespinWorkflowLoaderTestCase(TestCase):
     @patch('bespin.workflow.urlretrieve')
     def test__download_workflow(self, mock_urlretrieve, mock_mkdtemp):
         self.setup_mkdtemp(mock_mkdtemp)
-        loader = BespinWorkflowLoader(self.workflow_version)
+        loader = BespinWorkflowLoader(self.zipped_workflow_version)
         loader._download_workflow()
-        self.assertEqual(mock_urlretrieve.call_args, call(self.workflow_version.url, loader.download_path))
+        self.assertEqual(mock_urlretrieve.call_args, call(self.zipped_workflow_version.url, loader.download_path))
+
+    @patch('bespin.workflow.urlretrieve')
+    def test__no_download_direct(self, mock_urlretriefve, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.direct_workflow_version)
+        loader._download_workflow()
+        self.assertFalse(mock_mkdtemp.called)
+        self.assertFalse(mock_urlretriefve.called)
 
     @patch('bespin.workflow.zipfile.ZipFile')
     def test__handle_download_zipped(self, mock_zipfile, mock_mkdtemp):
@@ -95,6 +116,12 @@ class BespinWorkflowLoaderTestCase(TestCase):
         tool_path = loader._get_tool_path()
         self.assertEqual(tool_path, '/tmpdir/unzipped/workflow.cwl')
 
+    def test__get_tool_path_direct(self, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.direct_workflow_version)
+        tool_path = loader._get_tool_path()
+        self.assertEqual(tool_path, 'file:///direct/direct.cwl')
+
     def test__get_tool_path_raises(self, mock_mkdtemp):
         self.setup_mkdtemp(mock_mkdtemp)
         self.workflow_version.workflow_type = 'other'
@@ -104,11 +131,18 @@ class BespinWorkflowLoaderTestCase(TestCase):
         self.assertIn('Workflow type other is not supported', str(context.exception))
 
     @patch('bespin.workflow.shutil.rmtree')
-    def test__cleanup(self, mock_rmtree, mock_mkdtemp):
+    def test__cleanup_zipped(self, mock_rmtree, mock_mkdtemp):
         self.setup_mkdtemp(mock_mkdtemp)
-        loader = BespinWorkflowLoader(self.workflow_version)
+        loader = BespinWorkflowLoader(self.zipped_workflow_version)
         loader._cleanup()
         self.assertEqual(mock_rmtree.call_args, call(loader.download_dir))
+
+    @patch('bespin.workflow.shutil.rmtree')
+    def test__cleanup_direct(self, mock_rmtree, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.direct_workflow_version)
+        loader._cleanup()
+        self.assertFalse(mock_rmtree.called)
 
 
 class BespinWorkflowValidatorTestCase(TestCase):

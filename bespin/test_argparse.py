@@ -113,6 +113,18 @@ class ArgParserTestCase(TestCase):
             expected_version='vE.X.P'
         )
 
+    def test_workflow_versions_validate_direct_without_path(self):
+        self.arg_parser.parse_and_run_commands(['workflow-version', 'validate',
+                                                '--url', 'file:///direct.cwl',
+                                                '--type', 'direct'])
+        self.target_object.workflow_version_validate.assert_called_with(
+            url="file:///direct.cwl",
+            workflow_type="direct",
+            workflow_path=None,
+            expected_tag=None,
+            expected_version=None
+        )
+
     def test_workflow_config_list(self):
         self.arg_parser.parse_and_run_commands(["workflow-config", "list"])
         self.target_object.workflow_configs_list.assert_called_with(workflow_tag=None)

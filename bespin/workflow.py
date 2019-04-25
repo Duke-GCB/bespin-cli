@@ -23,6 +23,7 @@ class BespinWorkflowLoader(object):
 
     TYPE_PACKED = 'packed'
     TYPE_ZIPPED = 'zipped'
+    TYPE_DIRECT = 'direct'
 
     def __init__(self, workflow_version):
         """
@@ -30,9 +31,10 @@ class BespinWorkflowLoader(object):
         :param workflow_version: CWLWorkflowVersion containing the workflow_type and workflow_path
         :param download_dir: Optional path to a download directory. If None, a temp directory is used
         """
-        self.download_dir = tempfile.mkdtemp()
         self.workflow_version = workflow_version
-        self.download_path = os.path.join(self.download_dir, os.path.basename(workflow_version.url))
+        if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
+            self.download_dir = tempfile.mkdtemp()
+            self.download_path = os.path.join(self.download_dir, os.path.basename(workflow_version.url))
 
     def load(self):
         """
@@ -47,7 +49,8 @@ class BespinWorkflowLoader(object):
         return loaded
 
     def _download_workflow(self):
-        urlretrieve(self.workflow_version.url, self.download_path)
+        if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
+            urlretrieve(self.workflow_version.url, self.download_path)
 
     def _handle_download(self):
         if self.workflow_version.workflow_type == self.TYPE_ZIPPED:
@@ -76,6 +79,8 @@ class BespinWorkflowLoader(object):
             tool_path = self.download_path + '#main'
         elif self.workflow_version.workflow_type == self.TYPE_ZIPPED:
             tool_path = os.path.join(self.download_dir, self.workflow_version.workflow_path)
+        elif self.workflow_version.workflow_type == self.TYPE_DIRECT:
+            tool_path = self.workflow_version.url
         else:
             raise InvalidWorkflowFileException(
                 'Workflow type {} is not supported'.format(self.workflow_version.workflow_type))
@@ -85,7 +90,8 @@ class BespinWorkflowLoader(object):
         """
         Remove temporary download items
         """
-        shutil.rmtree(self.download_dir)
+        if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
+            shutil.rmtree(self.download_dir)
 
 
 class BespinWorkflowValidator(object):
