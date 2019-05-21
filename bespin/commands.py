@@ -2,6 +2,7 @@ from __future__ import print_function
 from bespin.config import ConfigFile
 from bespin.api import BespinApi
 from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader
+from bespin.tool_details import extract_tool_details
 from bespin.jobtemplate import JobTemplateLoader
 from bespin.exceptions import WorkflowConfigurationNotFoundException, UserInputException
 from tabulate import tabulate
@@ -61,8 +62,8 @@ class Commands(object):
         response = workflow_version.create(api)
         print("Created workflow version {}.".format(response['id']))
 
-    def workflow_version_validate(self, url, workflow_type, workflow_path, expected_tag=None,
-                                expected_version=None):
+    @staticmethod
+    def _raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path):
         if workflow_type == BespinWorkflowLoader.TYPE_DIRECT and workflow_path:
             # direct type does not use workflow_path
             msg = "Error: Do not provide path for {} workflows".format(BespinWorkflowLoader.TYPE_DIRECT)
@@ -71,10 +72,19 @@ class Commands(object):
             # other types require workflow_path
             msg = "Error: path is required for {} workflows".format(workflow_type)
             raise UserInputException(msg)
+
+    def workflow_version_validate(self, url, workflow_type, workflow_path, expected_tag=None, expected_version=None):
+        self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
         workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=True)
         validated = workflow_version.validate_workflow(expected_tag, expected_version)
         print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
 
+    def workflow_tool_details_create(self, url, workflow_type, workflow_path):
+        self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=False)
+        tool_details = extract_tool_details(workflow_version)
+        import json
+        print("Extracted tool_details:\n{}", json.dumps(tool_details, indent=2))
 
     def workflow_configs_list(self, workflow_tag):
         api = self._create_api()
