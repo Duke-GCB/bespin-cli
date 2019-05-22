@@ -1,6 +1,6 @@
 from unittest import TestCase
 from unittest.mock import patch, call, Mock, create_autospec
-from bespin.tool_details import DockerToolDetail, SoftwareToolDetail, ToolDetailsBuilder, ToolDetailsExtractor
+from bespin.tool_details import DockerToolDetail, SoftwareToolDetail, ToolDetailsBuilder, ToolDetails
 
 
 class DockerToolDetailTestCase(TestCase):
@@ -18,6 +18,6 @@ class ToolDetailsBuilderTestCase(TestCase):
         self.fail('not yet implemented')
 
 
-class ToolDetailsExtractorTestCase(TestCase):
+class ToolDetailsTestCase(TestCase):
     def test_something(self):
         self.fail('not yet implemented')

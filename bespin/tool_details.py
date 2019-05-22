@@ -84,7 +84,7 @@ class ToolDetailsBuilder(object):
         return details_list
 
 
-class ToolDetailsExtractor(object):
+class ToolDetails(object):
 
     def __init__(self, workflow_version):
         loader = BespinWorkflowLoader(workflow_version)
@@ -94,4 +94,10 @@ class ToolDetailsExtractor(object):
         builder.accept(parser.loaded_workflow)
         self.version = parser.version
         self.tag = parser.tag
-        self.tool_details = builder.build()
+        self.contents = builder.build()
+
+    def create(self, api):
+        # To create a ToolDetails, we must first look up the WorkflowVersion by the tag/version for its id
+        api_workflow_version = api.workflow_version_find_by_version_tag(self.version, self.tag)
+        workflow_version_id = api_workflow_version['id']
+        return api.workflow_version_tool_details_post(workflow_version_id, self.contents)

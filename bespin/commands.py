@@ -2,7 +2,7 @@ from __future__ import print_function
 from bespin.config import ConfigFile
 from bespin.api import BespinApi
 from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader
-from bespin.tool_details import ToolDetailsExtractor
+from bespin.tool_details import ToolDetails
 from bespin.jobtemplate import JobTemplateLoader
 from bespin.exceptions import WorkflowConfigurationNotFoundException, UserInputException
 from tabulate import tabulate
@@ -84,7 +84,7 @@ class Commands(object):
         self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
         workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, override_version=override_version,
                                               override_tag=override_tag, validate=False)
-        return ToolDetailsExtractor(workflow_version)
+        return ToolDetails(workflow_version)
 
     def workflow_version_tool_details_preview(self, url, workflow_type, workflow_path):
         """
@@ -93,8 +93,8 @@ class Commands(object):
         :param workflow_type: Type of workflow (packed/zipped/direct)
         :param workflow_path: Path of the workflow in the URL
         """
-        extractor = self._extract_tool_details(url, workflow_type, workflow_path)
-        print(json.dumps(extractor.tool_details, indent=2))
+        tool_details = self._extract_tool_details(url, workflow_type, workflow_path)
+        print(json.dumps(tool_details.contents, indent=2))
 
     def workflow_version_tool_details_create(self, url, workflow_type, workflow_path, override_tag=None,
                                              override_version=None):
@@ -107,13 +107,10 @@ class Commands(object):
         :param override_tag: Workflow tag of the workflow version to attach tool details to (parses from CWL if none)
         :param override_version: Version string of the workflow version to attach to details to (parses from CWL if none)
         """
-        extractor = self._extract_tool_details(url, workflow_type, workflow_path, override_tag, override_version)
+        tool_details = self._extract_tool_details(url, workflow_type, workflow_path, override_tag, override_version)
         api = self._create_api()
-        # To create a ToolDetails, we must first look up the WorkflowVersion by the tag/version for its id
-        api_workflow_version = api.workflow_version_find_by_version_tag(extractor.version, extractor.tag)
-        workflow_version_id = api_workflow_version['id']
-        response = api.workflow_version_tool_details_post(workflow_version_id, extractor.tool_details)
-        print("Created workflow tool details {}.".format(response['id']))
+        response = tool_details.create(api)
+        print("Created workflow version tool details {}.".format(response['id']))
 
     def workflow_configs_list(self, workflow_tag):
         api = self._create_api()
