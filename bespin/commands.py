@@ -2,11 +2,12 @@ from __future__ import print_function
 from bespin.config import ConfigFile
 from bespin.api import BespinApi
 from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader
-from bespin.tool_details import extract_tool_details
+from bespin.tool_details import ToolDetailsExtractor
 from bespin.jobtemplate import JobTemplateLoader
 from bespin.exceptions import WorkflowConfigurationNotFoundException, UserInputException
 from tabulate import tabulate
 import yaml
+import json
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -79,12 +80,22 @@ class Commands(object):
         validated = workflow_version.validate_workflow(expected_tag, expected_version)
         print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
 
-    def workflow_tool_details_create(self, url, workflow_type, workflow_path):
+    def workflow_tool_details_preview(self, url, workflow_type, workflow_path):
         self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
         workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=False)
-        tool_details = extract_tool_details(workflow_version)
-        import json
-        print("Extracted tool_details:\n{}", json.dumps(tool_details, indent=2))
+        extractor = ToolDetailsExtractor(workflow_version)
+        print(json.dumps(extractor.tool_details, indent=2))
+
+    def workflow_tool_details_create(self, url, workflow_type, workflow_path):
+        # May also override tag and version!
+        self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=False)
+        extractor = ToolDetailsExtractor(workflow_version)
+        api = self._create_api()
+        api_workflow_version = api.workflow_version_find_by_version_tag(extractor.version, extractor.tag)
+        workflow_version_id = api_workflow_version['id']
+        response = api.workflow_tool_details_post(workflow_version_id, extractor.tool_details)
+        print("Created workflow tool details {}.".format(response['id']))
 
     def workflow_configs_list(self, workflow_tag):
         api = self._create_api()

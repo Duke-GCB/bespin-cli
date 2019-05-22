@@ -106,6 +106,13 @@ class BespinApi(object):
             url += '?workflow__tag={}'.format(workflow_tag)
         return self._get_request(url)
 
+    def workflow_version_find_by_version_tag(self, version, tag):
+        url = '/workflow-versions/?version={}&workflow__tag={}'.format(version, tag)
+        workflow_versions = self._get_request(url)
+        if not workflow_versions :
+            raise WorkflowNotFound("No workflow version found with version/tag {}/{}".format(version, tag))
+        return workflow_versions[0]
+
     def workflow_versions_post(self, workflow, version, workflow_type, description, workflow_path, url, version_info_url, fields):
         data = {
             "workflow": workflow,
@@ -121,6 +128,13 @@ class BespinApi(object):
 
     def workflow_version_get(self, workflow_version):
         return self._get_request('/workflow-versions/{}/'.format(workflow_version))
+
+    def workflow_tool_details_post(self, workflow_version_id, tool_details):
+        data = {
+            "workflow_version": workflow_version_id,
+            "details": tool_details
+        }
+        return self._post_request('/admin/workflow-version-tool-details/', data)
 
     def workflow_configurations_list(self, tag=None, workflow=None, workflow_tag=None):
         url = '/workflow-configurations/'

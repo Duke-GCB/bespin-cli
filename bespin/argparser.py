@@ -164,14 +164,25 @@ class ToolDetailsCommand(object):
         self.target = target
 
     def add_actions(self, subparsers):
-        create_parser = subparsers.add_parser('create', description='Create tool details')
-        create_parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
-        create_parser.add_argument('--type', default='zipped', help='Type of workflow',
-                                         choices=['zipped','packed','direct'])
-        create_parser.add_argument('--path', required=False, help='Path to the workflow to run (relative path in '
-                                                                  'unzipped archive or #main for packed workflows.'
-                                                                  'Cannot be used for \'direct\' type)')
+        create_parser = subparsers.add_parser('create', description='Extract tool details (e.g. software versions) '
+                                                                    'from a workflow and upload them')
+        preview_parser = subparsers.add_parser('preview', description='Extract tool details (e.g. software versions) '
+                                                                      'from a workflow and display them')
+        for parser in [create_parser, preview_parser, ]:
+            parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
+            parser.add_argument('--type', default='zipped', help='Type of workflow',
+                                choices=['zipped','packed','direct'])
+            parser.add_argument('--path', required=False, help='Path to the workflow to run (relative path in '
+                                                               'unzipped archive or #main for packed workflows. '
+                                                               'Cannot be used for \'direct\' type)')
+            # Also add override tag/verison to create
         create_parser.set_defaults(func=self._create)
+        preview_parser.set_defaults(func=self._preview)
+
+    def _preview(self, args):
+        self.target.workflow_tool_details_preview(url=args.url,
+                                                  workflow_type=args.type,
+                                                  workflow_path=args.path)
 
     def _create(self, args):
         self.target.workflow_tool_details_create(url=args.url,

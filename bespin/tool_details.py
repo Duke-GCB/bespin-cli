@@ -18,15 +18,15 @@ class SoftwareToolDetail(object):
     def add_info(self, info_dict):
         software_info = []
         for package in self.packages:
-            package_info = {}
-            package_info['package'] = package.get('package',)
-            package_info['versions'] = package.get('version', [])
-            package_info['citation'] = package.get('https://schema.org/citation')
-            software_info.append(package_info)
+            software_info.append({
+                'package': package.get('package'),
+                'versions': package.get('version', []),
+                'citation': package.get('https://schema.org/citation')
+            })
         info_dict['software'] = software_info
 
 
-class ToolDetailsExtractor(object):
+class ToolDetailsBuilder(object):
 
     def __init__(self, prefix):
         self.details = []
@@ -50,7 +50,6 @@ class ToolDetailsExtractor(object):
 
     def extract_tool_details(self, node):
         if node.get('class') == 'CommandLineTool':
-            print('replacing', self.prefix)
             tool_name = node.get('id').replace(self.prefix, '', 1)
             if self.tool_exists(tool_name):  # skip if already extracted
                 return
@@ -64,7 +63,7 @@ class ToolDetailsExtractor(object):
             if tool_info: # only add if we have data
                 self.details.append({'tool_name': tool_name, 'tool_info': tool_info})
 
-    def make_details_list(self):
+    def build(self):
         details_list = []
         for detail in self.details:
             tool_name = detail.get('tool_name', '')
@@ -73,7 +72,7 @@ class ToolDetailsExtractor(object):
             software_infos_list = detail.get('tool_info', {}).get('software', {})
             packages_and_versions = []
             for info in software_infos_list:
-                packages_and_versions.append({'package': info.get('package'), 'versions': info.get('versions'), 'citation': info.get('citation')})
+                packages_and_versions.append({k: info[k] for k in ['package','versions', 'citation']})
             tool_detail = {
               'tool_name': tool_name,
               'docker_images': docker_images,
@@ -83,10 +82,14 @@ class ToolDetailsExtractor(object):
         return details_list
 
 
-def extract_tool_details(workflow_version):
-    loader = BespinWorkflowLoader(workflow_version)
-    parser = BespinWorkflowParser(loader.load())
-    prefix = loader.get_prefix()
-    extractor = ToolDetailsExtractor(prefix)
-    extractor.accept(parser.loaded_workflow)
-    return extractor.make_details_list()
+class ToolDetailsExtractor(object):
+
+    def __init__(self, workflow_version):
+        loader = BespinWorkflowLoader(workflow_version)
+        parser = BespinWorkflowParser(loader.load())
+        prefix = loader.get_prefix()
+        builder = ToolDetailsBuilder(prefix)
+        builder.accept(parser.loaded_workflow)
+        self.version = parser.version
+        self.tag = parser.tag
+        self.tool_details = builder.build()
