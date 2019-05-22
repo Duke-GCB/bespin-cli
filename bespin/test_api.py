@@ -140,29 +140,29 @@ class BespinApiTestCase(TestCase):
                                              headers=self.expected_headers)
 
     @patch('bespin.api.requests')
-    def test_workflow_version_find_by_version_tag(self, mock_requests):
+    def test_workflow_version_find_by_tag_version(self, mock_requests):
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = ['filtered',]
         mock_requests.get.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
-        item = api.workflow_version_find_by_version_tag('v3','exomeseq')
+        item = api.workflow_version_find_by_tag_version('exomeseq', 'v3')
 
         self.assertEqual(item, 'filtered')
-        mock_requests.get.assert_called_with('someurl/workflow-versions/?version=v3&workflow__tag=exomeseq',
+        mock_requests.get.assert_called_with('someurl/workflow-versions/?workflow__tag=exomeseq&version=v3',
                                              headers=self.expected_headers)
 
     @patch('bespin.api.requests')
-    def test_workflow_version_find_by_version_tag_raise_empty(self, mock_requests):
+    def test_workflow_version_find_by_tag_version_raises_empty(self, mock_requests):
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = []
         mock_requests.get.return_value = mock_response
 
         api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
         with self.assertRaises(WorkflowNotFound) as context:
-            api.workflow_version_find_by_version_tag('v3','exomeseq')
+            api.workflow_version_find_by_tag_version('exomeseq', 'v3')
         self.assertIn('No workflow version found matching exomeseq/v3', str(context.exception))
-        mock_requests.get.assert_called_with('someurl/workflow-versions/?version=v3&workflow__tag=exomeseq',
+        mock_requests.get.assert_called_with('someurl/workflow-versions/?workflow__tag=exomeseq&version=v3',
                                              headers=self.expected_headers)
 
     @patch('bespin.api.requests')
