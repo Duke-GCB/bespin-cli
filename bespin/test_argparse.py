@@ -125,6 +125,15 @@ class ArgParserTestCase(TestCase):
             expected_version=None
         )
 
+    def test_workflow_version_tool_details_create(self):
+        self.fail('not yet implemented')
+
+    def test_workflow_version_tool_details_create_with_overrides(self):
+        self.fail('not yet implemented')
+
+    def test_workflow_version_tool_details_preview(self):
+        self.fail('not yet implemented')
+
     def test_workflow_config_list(self):
         self.arg_parser.parse_and_run_commands(["workflow-config", "list"])
         self.target_object.workflow_configs_list.assert_called_with(workflow_tag=None)

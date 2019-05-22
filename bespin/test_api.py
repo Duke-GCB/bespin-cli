@@ -138,6 +138,8 @@ class BespinApiTestCase(TestCase):
         self.assertEqual(items, ['workflowversion1', 'workflowversion2'])
         mock_requests.get.assert_called_with('someurl/workflow-versions/?workflow__tag=exomeseq',
                                              headers=self.expected_headers)
+    def test_workflow_version_find_by_version_tag(self):
+        self.fail('not yet implemented')
 
     @patch('bespin.api.requests')
     def test_workflow_version_get(self, mock_requests):
@@ -180,6 +182,9 @@ class BespinApiTestCase(TestCase):
         }
         mock_requests.post.assert_called_with('someurl/admin/workflow-versions/', headers=self.expected_headers,
                                               json=expected_post_payload)
+
+    def test_workflow_version_tool_details_post(self):
+        self.fail('not yet implemented')
 
     @patch('bespin.api.requests')
     def test_stage_group_post(self, mock_requests):

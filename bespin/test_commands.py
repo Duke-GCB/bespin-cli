@@ -272,6 +272,12 @@ class CommandsTestCase(TestCase):
                                                expected_tag='workflow-tag', expected_version='v1.2.3')
         self.assertIn('path is required', str(context.exception))
 
+    def test_workflow_version_tool_details_preview(self):
+        self.fail('not yet implemented')
+
+    def test_workflow_version_tool_details_create(self):
+        self.fail('not yet implemented')
+
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.WorkflowConfigurationsList')
