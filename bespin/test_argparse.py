@@ -125,14 +125,44 @@ class ArgParserTestCase(TestCase):
             expected_version=None
         )
 
-    def test_workflow_version_tool_details_create(self):
-        self.fail('not yet implemented')
+    def test_workflow_version_tool_details_create_without_override(self):
+        self.arg_parser.parse_and_run_commands(['tool-details', 'create',
+                                                '--url', 'someurl',
+                                                '--type', 'zipped',
+                                                '--path', 'extracted/file.cwl'])
+        self.target_object.workflow_version_tool_details_create.assert_called_with(
+            url='someurl',
+            workflow_type='zipped',
+            workflow_path='extracted/file.cwl',
+            override_tag=None,
+            override_version=None
+        )
 
-    def test_workflow_version_tool_details_create_with_overrides(self):
-        self.fail('not yet implemented')
+    def test_workflow_version_tool_details_create_with_override(self):
+        self.arg_parser.parse_and_run_commands(['tool-details', 'create',
+                                                '--url', 'someurl',
+                                                '--type', 'zipped',
+                                                '--path', 'extracted/file.cwl',
+                                                '--workflow-tag', 'tag',
+                                                '--version', 'v3'])
+        self.target_object.workflow_version_tool_details_create.assert_called_with(
+            url='someurl',
+            workflow_type='zipped',
+            workflow_path='extracted/file.cwl',
+            override_tag='tag',
+            override_version='v3'
+        )
 
     def test_workflow_version_tool_details_preview(self):
-        self.fail('not yet implemented')
+        self.arg_parser.parse_and_run_commands(['tool-details', 'preview',
+                                                '--url', 'preview-url',
+                                                '--type', 'zipped',
+                                                '--path', 'extracted/file.cwl'])
+        self.target_object.workflow_version_tool_details_preview.assert_called_with(
+            url='preview-url',
+            workflow_type='zipped',
+            workflow_path='extracted/file.cwl',
+        )
 
     def test_workflow_config_list(self):
         self.arg_parser.parse_and_run_commands(["workflow-config", "list"])
