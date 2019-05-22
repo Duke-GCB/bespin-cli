@@ -110,7 +110,7 @@ class BespinApi(object):
         url = '/workflow-versions/?version={}&workflow__tag={}'.format(version, tag)
         workflow_versions = self._get_request(url)
         if not workflow_versions :
-            raise WorkflowNotFound("No workflow version found with version/tag {}/{}".format(version, tag))
+            raise WorkflowNotFound("No workflow version found matching {}/{}".format(tag, version))
         return workflow_versions[0]
 
     def workflow_versions_post(self, workflow, version, workflow_type, description, workflow_path, url, version_info_url, fields):
