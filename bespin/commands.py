@@ -80,21 +80,39 @@ class Commands(object):
         validated = workflow_version.validate_workflow(expected_tag, expected_version)
         print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
 
-    def workflow_tool_details_preview(self, url, workflow_type, workflow_path):
+    def _extract_tool_details(self, url, workflow_type, workflow_path, override_tag=None, override_version=None):
         self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
-        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=False)
-        extractor = ToolDetailsExtractor(workflow_version)
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, override_version=override_version,
+                                              override_tag=override_tag, validate=False)
+        return ToolDetailsExtractor(workflow_version)
+
+    def workflow_version_tool_details_preview(self, url, workflow_type, workflow_path):
+        """
+        Fetch/load/extract tools from a CWL workflow and print the JSON without POSTing to the API
+        :param url: URL of the CWL workflow to parse
+        :param workflow_type: Type of workflow (packed/zipped/direct)
+        :param workflow_path: Path of the workflow in the URL
+        """
+        extractor = self._extract_tool_details(url, workflow_type, workflow_path)
         print(json.dumps(extractor.tool_details, indent=2))
 
-    def workflow_tool_details_create(self, url, workflow_type, workflow_path):
-        # May also override tag and version!
-        self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
-        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=False)
-        extractor = ToolDetailsExtractor(workflow_version)
+    def workflow_version_tool_details_create(self, url, workflow_type, workflow_path, override_tag=None,
+                                             override_version=None):
+        """
+        Fetch/load/extract tools from a CWL workflow and create a workflow-version-tool-details object via the API for
+        the corresponding workflow-version
+        :param url: URL of the CWL workflow to parse
+        :param workflow_type: Type of workflow (packed/zipped/direct)
+        :param workflow_path: Path of the workflow in the URL
+        :param override_tag: Workflow tag of the workflow version to attach tool details to (parses from CWL if none)
+        :param override_version: Version string of the workflow version to attach to details to (parses from CWL if none)
+        """
+        extractor = self._extract_tool_details(url, workflow_type, workflow_path, override_tag, override_version)
         api = self._create_api()
+        # To create a ToolDetails, we must first look up the WorkflowVersion by the tag/version for its id
         api_workflow_version = api.workflow_version_find_by_version_tag(extractor.version, extractor.tag)
         workflow_version_id = api_workflow_version['id']
-        response = api.workflow_tool_details_post(workflow_version_id, extractor.tool_details)
+        response = api.workflow_version_tool_details_post(workflow_version_id, extractor.tool_details)
         print("Created workflow tool details {}.".format(response['id']))
 
     def workflow_configs_list(self, workflow_tag):

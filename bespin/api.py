@@ -129,7 +129,7 @@ class BespinApi(object):
     def workflow_version_get(self, workflow_version):
         return self._get_request('/workflow-versions/{}/'.format(workflow_version))
 
-    def workflow_tool_details_post(self, workflow_version_id, tool_details):
+    def workflow_version_tool_details_post(self, workflow_version_id, tool_details):
         data = {
             "workflow_version": workflow_version_id,
             "details": tool_details
