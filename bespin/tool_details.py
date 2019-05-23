@@ -5,7 +5,7 @@ documented at https://www.commonwl.org/v1.0/CommandLineTool.html, namely DockerR
 and SoftwarePackage
 
 """
-from bespin.workflow import BespinWorkflowLoader, BespinWorkflowParser
+from bespin.workflow import BespinWorkflowLoader, BespinWorkflowParser, remove_prefix
 
 
 class DockerToolDetail(object):
@@ -88,9 +88,9 @@ class ToolDetailsBuilder(object):
         """
         if node.get('class') == 'CommandLineTool':
             # The id of a tool is a long URI string prefixed with the workflow's URL at time of loading
-            # For readability, replace that prefix so that
+            # For readability, remove that prefix so that
             #    'file:///tmp/folder1/ba4wt23/workflow-dir/tools/Tool.cwl' can become 'tools/Tool.cwl'
-            tool_name = node.get('id').replace(self.prefix, '', 1)
+            tool_name = remove_prefix(node.get('id'), self.prefix)
             # Avoid duplicating tools included multiple times in the same workflow
             if self.tool_exists(tool_name):
                 return
