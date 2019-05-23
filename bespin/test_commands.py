@@ -272,6 +272,37 @@ class CommandsTestCase(TestCase):
                                                expected_tag='workflow-tag', expected_version='v1.2.3')
         self.assertIn('path is required', str(context.exception))
 
+    @patch('bespin.commands.print')
+    @patch('bespin.commands.json')
+    @patch('bespin.commands.CWLWorkflowVersion')
+    @patch('bespin.commands.ToolDetails')
+    def test_workflow_version_tool_details_preview(self, mock_tool_details, mock_cwl_workflow_version, mock_json, mock_print):
+        commands = Commands(self.version_str, self.user_agent_str)
+        mock_cwl_workflow_version.return_value.validate_workflow.return_value = Mock(tag='workflow-tag',version='v1.2.3')
+        commands.workflow_version_tool_details_preview(url='someurl', workflow_type='zipped', workflow_path='extracted/workflow.cwl')
+        mock_cwl_workflow_version.assert_called_with('someurl','zipped','extracted/workflow.cwl',
+                                                     override_tag=None, override_version=None, validate=False)
+        mock_tool_details.assert_called_with(mock_cwl_workflow_version.return_value)
+        mock_json.dumps.assert_called_with(mock_tool_details.return_value.contents, indent=2)
+        mock_print.assert_called_with(mock_json.dumps.return_value)
+
+    @patch('bespin.commands.ConfigFile')
+    @patch('bespin.commands.BespinApi')
+    @patch('bespin.commands.print')
+    @patch('bespin.commands.CWLWorkflowVersion')
+    @patch('bespin.commands.ToolDetails')
+    def test_workflow_version_tool_details_create(self, mock_tool_details, mock_cwl_workflow_version, mock_print, mock_bespin_api, mock_config_file):
+        commands = Commands(self.version_str, self.user_agent_str)
+        mock_create = mock_tool_details.return_value.create
+        mock_create.return_value = {'id': '5'}
+        commands.workflow_version_tool_details_create(url='someurl', workflow_type='zipped',
+                                                      workflow_path='extracted/workflow.cwl', override_tag='tagg',
+                                                      override_version='v1')
+        mock_cwl_workflow_version.assert_called_with('someurl','zipped','extracted/workflow.cwl',
+                                                     override_tag='tagg', override_version='v1', validate=False)
+        mock_create.assert_called_with(mock_bespin_api.return_value)
+        mock_print.assert_called_with("Created workflow version tool details 5.")
+
     @patch('bespin.commands.ConfigFile')
     @patch('bespin.commands.BespinApi')
     @patch('bespin.commands.WorkflowConfigurationsList')

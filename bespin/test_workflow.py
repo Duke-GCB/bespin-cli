@@ -1,11 +1,27 @@
 from __future__ import absolute_import
 from unittest import TestCase
+from bespin.workflow import remove_prefix
 from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader, BespinWorkflowValidator, BespinWorkflowParser
 from bespin.workflow import InvalidWorkflowFileException
 from unittest.mock import patch, call, Mock, create_autospec
 
 import logging
 logging.disable(logging.ERROR)
+
+
+class RemovePrefixTestCase(TestCase):
+
+    def test_removes_prefix(self):
+        removed = remove_prefix('/foo/bar/baz', '/foo')
+        self.assertEqual(removed, '/bar/baz')
+
+    def test_prefix_not_found(self):
+        removed = remove_prefix('/foo/bar/baz', 'other')
+        self.assertEqual(removed, '/foo/bar/baz')
+
+    def test_prefix_found_in_middle(self):
+        removed = remove_prefix('/foo/bar/baz', '/bar')
+        self.assertEqual(removed, '/foo/bar/baz')
 
 
 @patch('bespin.workflow.tempfile.mkdtemp')
@@ -143,6 +159,26 @@ class BespinWorkflowLoaderTestCase(TestCase):
         loader = BespinWorkflowLoader(self.direct_workflow_version)
         loader._cleanup()
         self.assertFalse(mock_rmtree.called)
+
+    def test_get_prefix_packed(self, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.packed_workflow_version)
+        prefix = loader.get_prefix()
+        self.assertEqual(prefix, 'file:///tmpdir/packed.cwl#')
+
+    def test_get_prefix_zipped(self, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.zipped_workflow_version)
+        prefix = loader.get_prefix()
+        self.assertEqual(prefix, 'file:///tmpdir/unzipped/')
+
+    def test_get_prefix_direct(self, mock_mkdtemp):
+        self.setup_mkdtemp(mock_mkdtemp)
+        loader = BespinWorkflowLoader(self.direct_workflow_version)
+        prefix = loader.get_prefix()
+        # Does not use tmpdir
+        self.assertEqual(prefix, 'file:///direct/')
+        self.assertFalse(mock_mkdtemp.called)
 
 
 class BespinWorkflowValidatorTestCase(TestCase):

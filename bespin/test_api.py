@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from unittest import TestCase
-from bespin.api import BespinApi, BespinException, BespinClientErrorException, NotFoundException, requests
+from bespin.api import BespinApi, BespinException, BespinClientErrorException, NotFoundException, WorkflowNotFound, requests
 from mock import patch, Mock
 
 
@@ -140,6 +140,32 @@ class BespinApiTestCase(TestCase):
                                              headers=self.expected_headers)
 
     @patch('bespin.api.requests')
+    def test_workflow_version_find_by_tag_version(self, mock_requests):
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = ['filtered',]
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        item = api.workflow_version_find_by_tag_version('exomeseq', 'v3')
+
+        self.assertEqual(item, 'filtered')
+        mock_requests.get.assert_called_with('someurl/workflow-versions/?workflow__tag=exomeseq&version=v3',
+                                             headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
+    def test_workflow_version_find_by_tag_version_raises_empty(self, mock_requests):
+        mock_response = Mock(status_code=200)
+        mock_response.json.return_value = []
+        mock_requests.get.return_value = mock_response
+
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        with self.assertRaises(WorkflowNotFound) as context:
+            api.workflow_version_find_by_tag_version('exomeseq', 'v3')
+        self.assertIn('No workflow version found matching exomeseq/v3', str(context.exception))
+        mock_requests.get.assert_called_with('someurl/workflow-versions/?workflow__tag=exomeseq&version=v3',
+                                             headers=self.expected_headers)
+
+    @patch('bespin.api.requests')
     def test_workflow_version_get(self, mock_requests):
         mock_response = Mock(status_code=200)
         mock_response.json.return_value = 'workflowversion1'
@@ -180,6 +206,20 @@ class BespinApiTestCase(TestCase):
         }
         mock_requests.post.assert_called_with('someurl/admin/workflow-versions/', headers=self.expected_headers,
                                               json=expected_post_payload)
+
+    @patch('bespin.api.requests')
+    def test_workflow_version_tool_details_post(self, mock_requests):
+        mock_response = Mock(status_code=201)
+        mock_response.json.return_value = 'details1'
+        mock_requests.post.return_value = mock_response
+        workflow_version_id = '3'
+        contents = [{'docker_image': 'ubuntu:latest'}]
+        api = BespinApi(config=self.mock_config, user_agent_str=self.mock_user_agent_str)
+        tool_details = api.workflow_version_tool_details_post(workflow_version_id, contents)
+        self.assertEqual(tool_details, 'details1')
+        mock_requests.post.assert_called_with('someurl/admin/workflow-version-tool-details/',
+                                              headers=self.expected_headers,
+                                              json={'workflow_version': '3', 'details': contents})
 
     @patch('bespin.api.requests')
     def test_stage_group_post(self, mock_requests):

@@ -16,6 +16,12 @@ from bespin.exceptions import InvalidWorkflowFileException
 log = logging.getLogger(__name__)
 
 
+def remove_prefix(text, prefix):
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    return text
+
+
 class BespinWorkflowLoader(object):
     """
     Downloads, extracts, and loads workflows from a URL - packed or zipped.
@@ -33,7 +39,7 @@ class BespinWorkflowLoader(object):
         """
         self.workflow_version = workflow_version
         if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
-            self.download_dir = tempfile.mkdtemp()
+            self.download_dir = os.path.realpath(tempfile.mkdtemp())
             self.download_path = os.path.join(self.download_dir, os.path.basename(workflow_version.url))
 
     def load(self):
@@ -92,6 +98,31 @@ class BespinWorkflowLoader(object):
         """
         if not self.workflow_version.workflow_type == self.TYPE_DIRECT:
             shutil.rmtree(self.download_dir)
+
+    def get_prefix(self):
+        """
+        Determine the workflow's URI prefix from the loaded workflow_version.
+        This prefix is useful for formatting the 'id' field of CWL objects included by the workflow,
+        and by convention is related to the directory or URI containing the workflow document
+        Note that we always use os.path.realpath here because cwltool will canonicalize paths too.
+        :return: str: URI prefix of the workflow that can be stripped off parsed tools
+        """
+        if self.workflow_version.workflow_type == self.TYPE_DIRECT:
+            # Direct workflows may be 'file:///path/to/workflow.cwl' or /path/to/workflow.cwl
+            file_path = remove_prefix(self.workflow_version.url, 'file://')
+            workflow_dir = os.path.dirname(file_path)
+            prefix = 'file://{}/'.format(os.path.realpath(workflow_dir))
+        elif self.workflow_version.workflow_type == self.TYPE_ZIPPED:
+            # For zipped workflows we need to determine the absoute path to the unzipped file and get its directory
+            workflow_dir = os.path.dirname(os.path.join(self.download_dir, self.workflow_version.workflow_path))
+            prefix = 'file://{}/'.format(os.path.realpath(workflow_dir))
+        elif self.workflow_version.workflow_type == self.TYPE_PACKED:
+            # The prefix from a packed workflow uses the full path to the packed CWL file, plus a '#'
+            prefix = 'file://{}#'.format(os.path.realpath(self.download_path))
+        else:
+            raise InvalidWorkflowFileException(
+                'Workflow type {} is not supported'.format(self.workflow_version.workflow_type))
+        return prefix
 
 
 class BespinWorkflowValidator(object):

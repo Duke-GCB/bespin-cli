@@ -20,14 +20,17 @@ class ConfigFileTestCase(TestCase):
         config_file.write_config.assert_not_called()
 
     @patch('bespin.config.os')
-    def test_read_or_create_config_file_doesnt_exist(self, mock_os):
+    @patch('builtins.print')
+    def test_read_or_create_config_file_doesnt_exist(self, mock_print, mock_os):
         config_file = ConfigFile(filename='/tmp/test.yml')
         config_file.read_config = Mock()
         config_file.write_config = Mock()
         config_file._prompt_user_for_token = Mock()
 
         mock_os.path.exists.return_value = False
+        self.assertFalse(mock_print.called)
         config = config_file.read_or_create_config()
+        self.assertTrue(mock_print.called)
 
         self.assertEqual(config.token, config_file._prompt_user_for_token.return_value)
         config_file.read_config.assert_not_called()

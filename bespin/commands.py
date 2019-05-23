@@ -2,10 +2,12 @@ from __future__ import print_function
 from bespin.config import ConfigFile
 from bespin.api import BespinApi
 from bespin.workflow import CWLWorkflowVersion, BespinWorkflowLoader
+from bespin.tool_details import ToolDetails
 from bespin.jobtemplate import JobTemplateLoader
 from bespin.exceptions import WorkflowConfigurationNotFoundException, UserInputException
 from tabulate import tabulate
 import yaml
+import json
 import sys
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -61,8 +63,8 @@ class Commands(object):
         response = workflow_version.create(api)
         print("Created workflow version {}.".format(response['id']))
 
-    def workflow_version_validate(self, url, workflow_type, workflow_path, expected_tag=None,
-                                expected_version=None):
+    @staticmethod
+    def _raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path):
         if workflow_type == BespinWorkflowLoader.TYPE_DIRECT and workflow_path:
             # direct type does not use workflow_path
             msg = "Error: Do not provide path for {} workflows".format(BespinWorkflowLoader.TYPE_DIRECT)
@@ -71,10 +73,44 @@ class Commands(object):
             # other types require workflow_path
             msg = "Error: path is required for {} workflows".format(workflow_type)
             raise UserInputException(msg)
+
+    def workflow_version_validate(self, url, workflow_type, workflow_path, expected_tag=None, expected_version=None):
+        self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
         workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, validate=True)
         validated = workflow_version.validate_workflow(expected_tag, expected_version)
         print("Validated {} as '{}/{}'".format(url, validated.tag, validated.version))
 
+    def _extract_tool_details(self, url, workflow_type, workflow_path, override_tag=None, override_version=None):
+        self._raise_on_incompatible_workflow_type_and_path(workflow_type, workflow_path)
+        workflow_version = CWLWorkflowVersion(url, workflow_type, workflow_path, override_version=override_version,
+                                              override_tag=override_tag, validate=False)
+        return ToolDetails(workflow_version)
+
+    def workflow_version_tool_details_preview(self, url, workflow_type, workflow_path):
+        """
+        Fetch/load/extract tools from a CWL workflow and print the JSON without POSTing to the API
+        :param url: URL of the CWL workflow to parse
+        :param workflow_type: Type of workflow (packed/zipped/direct)
+        :param workflow_path: Path of the workflow in the URL
+        """
+        tool_details = self._extract_tool_details(url, workflow_type, workflow_path)
+        print(json.dumps(tool_details.contents, indent=2))
+
+    def workflow_version_tool_details_create(self, url, workflow_type, workflow_path, override_tag=None,
+                                             override_version=None):
+        """
+        Fetch/load/extract tools from a CWL workflow and create a workflow-version-tool-details object via the API for
+        the corresponding workflow-version
+        :param url: URL of the CWL workflow to parse
+        :param workflow_type: Type of workflow (packed/zipped/direct)
+        :param workflow_path: Path of the workflow in the URL
+        :param override_tag: Workflow tag of the workflow version to attach tool details to (parses from CWL if none)
+        :param override_version: Version string of the workflow version to attach to details to (parses from CWL if none)
+        """
+        tool_details = self._extract_tool_details(url, workflow_type, workflow_path, override_tag, override_version)
+        api = self._create_api()
+        response = tool_details.create(api)
+        print("Created workflow version tool details {}.".format(response['id']))
 
     def workflow_configs_list(self, workflow_tag):
         api = self._create_api()

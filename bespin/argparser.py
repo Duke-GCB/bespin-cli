@@ -22,6 +22,7 @@ class ArgParser(object):
     def _add_commands_to_parser(self):
         self._add_command(WorkflowCommand)
         self._add_command(WorkflowVersionCommand)
+        self._add_command(ToolDetailsCommand)
         self._add_command(WorkflowConfigCommand)
         self._add_command(ShareGroupCommand)
         self._add_command(JobConfigCommand)
@@ -128,7 +129,7 @@ class WorkflowVersionCommand(object):
         validate_parser.add_argument('--type', default='zipped', help='Type of workflow',
                                      choices=['zipped','packed','direct'])
         validate_parser.add_argument('--path', required=False, help='Path to the workflow to run (relative path in '
-                                                                 'unzipped archive or #main for packed workflows.'
+                                                                    'unzipped archive or #main for packed workflows.'
                                                                     'Cannot be used for \'direct\' type)')
         validate_parser.add_argument('--version', metavar='VERSION_STRING',
                                      help='Explicit version to check when validating')
@@ -153,6 +154,48 @@ class WorkflowVersionCommand(object):
                                               workflow_path=args.path,
                                               expected_tag=args.workflow_tag,
                                               expected_version=args.version)
+
+
+class ToolDetailsCommand(object):
+    name = "tool-details"
+    description = "workflow version tool details commands"
+
+    def __init__(self, target):
+        self.target = target
+
+    def add_actions(self, subparsers):
+        create_parser = subparsers.add_parser('create', description='Create new workflow version tool details for '
+                                                                    'a workflow version, parsing them from a CWL '
+                                                                    'workflow')
+        preview_parser = subparsers.add_parser('preview', description='Parse workflow version tool details from a CWL '
+                                                                      'workflow and display them in JSON format')
+        for parser in [create_parser, preview_parser, ]:
+            parser.add_argument('--url', required=True, help='URL that specifies the CWL workflow')
+            parser.add_argument('--type', default='zipped', help='Type of workflow',
+                                choices=['zipped','packed','direct'])
+            parser.add_argument('--path', required=False, help='Path to the workflow to run (relative path in '
+                                                               'unzipped archive or #main for packed workflows. '
+                                                               'Cannot be used for \'direct\' type)')
+        create_parser.add_argument('--version', metavar='VERSION_STRING',
+                                   help='Explicit version to use when looking up workflow version '
+                                        '(otherwise reads from CWL label)')
+        create_parser.add_argument('--workflow-tag', metavar='WORKFLOW_TAG',
+                                   help='Explicit workflow tag to use when looking up workflow version '
+                                        '(otherwise reads from CWL label)')
+        create_parser.set_defaults(func=self._create)
+        preview_parser.set_defaults(func=self._preview)
+
+    def _preview(self, args):
+        self.target.workflow_version_tool_details_preview(url=args.url,
+                                                          workflow_type=args.type,
+                                                          workflow_path=args.path)
+
+    def _create(self, args):
+        self.target.workflow_version_tool_details_create(url=args.url,
+                                                         workflow_type=args.type,
+                                                         workflow_path=args.path,
+                                                         override_version=args.version,
+                                                         override_tag=args.workflow_tag)
 
 
 class WorkflowConfigCommand(object):
