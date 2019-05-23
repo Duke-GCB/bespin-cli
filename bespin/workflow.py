@@ -16,6 +16,12 @@ from bespin.exceptions import InvalidWorkflowFileException
 log = logging.getLogger(__name__)
 
 
+def remove_prefix(text, prefix):
+    if text.startswith(prefix):
+        return text[len(prefix):]
+    return text
+
+
 class BespinWorkflowLoader(object):
     """
     Downloads, extracts, and loads workflows from a URL - packed or zipped.
@@ -102,8 +108,9 @@ class BespinWorkflowLoader(object):
         :return: str: URI prefix of the workflow that can be stripped off parsed tools
         """
         if self.workflow_version.workflow_type == self.TYPE_DIRECT:
-            # For direct workflows, we just use the directory containing the workflow file
-            workflow_dir = os.path.dirname(self.workflow_version.url)
+            # Direct workflows may be 'file:///path/to/workflow.cwl' or /path/to/workflow.cwl
+            file_path = remove_prefix(self.workflow_version.url, 'file://')
+            workflow_dir = os.path.dirname(file_path)
             prefix = 'file://{}/'.format(os.path.realpath(workflow_dir))
         elif self.workflow_version.workflow_type == self.TYPE_ZIPPED:
             # For zipped workflows we need to determine the absoute path to the unzipped file and get its directory
