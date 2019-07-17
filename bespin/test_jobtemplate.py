@@ -18,7 +18,7 @@ class JobTemplateTestCase(TestCase):
             'name': 'myjob',
             'tag': 'sometag'
         }
-        self.assertEqual(job_template.get_formatted_dict(), expected_dict)
+        self.assertEqual(job_template.get_formatted_dict(api=Mock()), expected_dict)
 
     def test_create_user_job_order_json(self):
         job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={

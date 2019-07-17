@@ -10,11 +10,12 @@ class JobTemplate(object):
     """
     Contains data for creating a job.
     """
-    def __init__(self, tag, name, fund_code, job_order):
+    def __init__(self, tag, name, fund_code, job_order, job_strategy=None):
         self.tag = tag
         self.name = name
         self.fund_code = fund_code
         self.job_order = job_order
+        self.job_strategy = job_strategy
         self.stage_group_id = None
 
     def create_user_job_order(self):
@@ -66,7 +67,7 @@ class JobTemplate(object):
                 sequence += 1
                 dds_project_ids.add(dds_file.project_id)
 
-            job = api.job_templates_create_job(self.get_formatted_dict())
+            job = api.job_templates_create_job(self.get_formatted_dict(api))
             dds_file_util = DDSFileUtil()
             for project_id in dds_project_ids:
                 dds_file_util.give_download_permissions(project_id, dds_user_credential['dds_id'])
@@ -77,7 +78,7 @@ class JobTemplate(object):
     def validate(self, api):
         try:
             # check with bespin-api to see if the job order is valid
-            api.job_template_validate(self.get_formatted_dict())
+            api.job_template_validate(self.get_formatted_dict(api))
             # make sure DukeDS files exist (this takes longer)
             self.get_dds_files_details()
         except BespinClientErrorException as ex:
@@ -95,7 +96,7 @@ class JobTemplate(object):
             error_message = str(ex)
         raise IncompleteJobTemplateException(error_message)
 
-    def get_formatted_dict(self):
+    def get_formatted_dict(self, api):
         formatted_job_order = self.create_user_job_order()
         data = {
             'name': self.name,
@@ -103,8 +104,12 @@ class JobTemplate(object):
             'job_order': formatted_job_order,
             'tag': self.tag,
         }
+        if self.job_strategy:
+            job_strategy_details = api.job_strategy_get_for_name(self.job_strategy)
+            data['job_strategy'] = job_strategy_details['id']
         if self.stage_group_id:
             data['stage_group'] = self.stage_group_id
+        print(data)
         return data
 
 
@@ -119,7 +124,8 @@ class JobTemplateLoader(object):
         job_template = JobTemplate(tag=self.data.get('tag'),
                                    name=self.data.get('name'),
                                    fund_code=self.data.get('fund_code'),
-                                   job_order=self.data.get('job_order'))
+                                   job_order=self.data.get('job_order'),
+                                   job_strategy=self.data.get('job_strategy'))
         return job_template
 
 
