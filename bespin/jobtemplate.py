@@ -109,7 +109,6 @@ class JobTemplate(object):
             data['job_strategy'] = job_strategy_details['id']
         if self.stage_group_id:
             data['stage_group'] = self.stage_group_id
-        print(data)
         return data
 
 
