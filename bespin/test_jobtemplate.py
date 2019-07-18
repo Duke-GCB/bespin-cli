@@ -10,7 +10,14 @@ from mock import patch, call, Mock
 
 
 class JobTemplateTestCase(TestCase):
+    def test_constructor__job_strategy(self):
+        job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={})
+        self.assertEqual(job_template.job_strategy, None)
+        job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={}, job_strategy='cloud2')
+        self.assertEqual(job_template.job_strategy, 'cloud2')
+
     def test_get_formatted_dict(self):
+        mock_api = Mock()
         job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={})
         expected_dict = {
             'fund_code': '001',
@@ -18,7 +25,22 @@ class JobTemplateTestCase(TestCase):
             'name': 'myjob',
             'tag': 'sometag'
         }
-        self.assertEqual(job_template.get_formatted_dict(), expected_dict)
+        self.assertEqual(job_template.get_formatted_dict(api=mock_api), expected_dict)
+        mock_api.job_strategy_get_for_name.assert_not_called()
+
+    def test_get_formatted_dict__job_strategy(self):
+        mock_api = Mock()
+        mock_api.job_strategy_get_for_name.return_value = {'id':'abc123'}
+        job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={}, job_strategy='cloud3')
+        expected_dict = {
+            'fund_code': '001',
+            'job_order': {},
+            'name': 'myjob',
+            'tag': 'sometag',
+            'job_strategy': 'abc123',
+        }
+        self.assertEqual(job_template.get_formatted_dict(api=mock_api), expected_dict)
+        mock_api.job_strategy_get_for_name.assert_called_with('cloud3')
 
     def test_create_user_job_order_json(self):
         job_template = JobTemplate(tag='sometag', name='myjob', fund_code='001', job_order={
@@ -250,6 +272,26 @@ class JobFileLoaderTestCase(TestCase):
         self.assertEqual(job_template.fund_code, '0001')
         self.assertEqual(job_template.job_order, {})
         self.assertEqual(job_template.tag, 'mytag')
+        self.assertEqual(job_template.job_strategy, None)
+
+    @patch('bespin.jobtemplate.yaml')
+    def test_create_job_file__job_strategy(self, mock_yaml):
+        mock_yaml.load.return_value = {
+            'name': 'myjob',
+            'fund_code': '0001',
+            'job_order': {},
+            'tag': 'mytag',
+            'job_strategy': 'cloud9'
+        }
+        job_template_loader = JobTemplateLoader(Mock())
+        job_template_loader.validate_job_file_data = Mock()
+        job_template = job_template_loader.create_job_template()
+
+        self.assertEqual(job_template.name, 'myjob')
+        self.assertEqual(job_template.fund_code, '0001')
+        self.assertEqual(job_template.job_order, {})
+        self.assertEqual(job_template.tag, 'mytag')
+        self.assertEqual(job_template.job_strategy, 'cloud9')
 
 
 class JobOrderWalkerTestCase(TestCase):
